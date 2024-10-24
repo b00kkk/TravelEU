@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link href="https://cdn.jsdelivr.net/npm/chartist@0.11.0/dist/chartist.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/jqvmap@1.5.1/dist/jqvmap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.9.0/dist/fullcalendar.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pixeden-stroke-7-icon@1.2.3/pe-icon-7-stroke/dist/pe-icon-7-stroke.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/weathericons@2.1.0/css/weather-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.0/css/flag-icon.min.css">
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>일정 선택</title>
+    <link rel="stylesheet" href="static/css/bp1.css">
+    <style>
+        body {
+            text-align: center;
+        }
+        .arrow {
+            width: 30px;
+            height: auto;
+        }
+        .form-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <h1>일정을 설정해주세요</h1><br>
+    <div class="travel-form">
+        <div class="travel-form1">
+            <div class="single-tab-select-box">
+                <h2>여행 시작 날짜</h2>
+                <div class="col">
+                    <div class="single-tab-select-box">
+                        <div class="travel-check-icon">
+                            <form action="#">
+                                <input type="DATE" name="start_date" id="start_datepicker" min="" value="">
+                            </form>
+                        </div><!-- /.travel-check-icon -->
+                    </div><!--/.single-tab-select-box-->
+                </div><!--/.col-->
+            </div>
+            <button type="button" onclick="save_start_date()">저장</button>
+        </div>
+        <i class="fa fa-arrow-right"></i>
+        <div class="travel-form2">
+            <div class="single-tab-select-box">
+                <h2>여행 끝 날짜</h2>
+                <div class="col">
+                    <div class="single-tab-select-box">
+                        <div class="travel-check-icon">
+                            <form action="#">
+                                <input type="DATE" name="end_date" id="end_datepicker" min="" value="">
+                            </form>
+                        </div><!-- /.travel-check-icon -->
+                    </div><!--/.single-tab-select-box-->
+                </div><!--/.col-->
+            </div>
+            <button type="submit" onclick="save_end_date()">저장</button>
+        </div>
+    </div>
+    <div class="last-button">
+        <button type="submit" onclick="planItinerary()">확인</button>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // 오늘 날짜를 가져오기
+            var today = new Date();
+    
+            // 최소 날짜 설정 (오늘)
+            var minStartDate = today.toISOString().split('T')[0];
+    
+            // 오늘의 다음 날 계산
+            var tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+    
+            // 최소 날짜 설정 (오늘의 다음 날)
+            var minEndDate = tomorrow.toISOString().split('T')[0];
+    
+            // 초기 값 설정 (오늘)
+            var initialDate = today.toISOString().split('T')[0];
+    
+            // 여행 시작 날짜 필드 설정
+            document.getElementById('start_datepicker').min = minStartDate;
+            document.getElementById('start_datepicker').value = initialDate;
+    
+            // 여행 종료 날짜 필드 설정
+            document.getElementById('end_datepicker').min = minEndDate;
+            document.getElementById('end_datepicker').value = minEndDate;
+        });
+
+        function save_start_date() {
+            var start_date = document.getElementById("start_datepicker").value;
+            var start_date2=document.getElementById("start_datepicker").value;
+            if (start_date) {
+                sessionStorage.setItem('start_date', start_date);
+                alert("여행 시작 날짜가 저장되었습니다.");
+                sessionStorage.setItem('start_date2',start_date2)
+            } 
+        }
+
+        function save_end_date() {
+            var end_date = document.getElementById("end_datepicker").value;
+
+            if (end_date) {
+                sessionStorage.setItem('end_date', end_date);
+                alert("여행 끝 날짜가 저장되었습니다.");
+            }
+        }
+
+        function planItinerary() {
+            var start_date = sessionStorage.getItem('start_date');
+            var start_date2=sessionStorage.getItem('start_date2');
+            var end_date = sessionStorage.getItem('end_date');
+
+            // 종료 날짜와 시작 날짜를 가져와 Date 객체로 변환
+			var startDate = new Date(start_date);
+			var endDate = new Date(end_date);
+
+			// 날짜 차이 계산
+			var timeDiff = Math.abs(endDate.getTime() - startDate.getTime());
+			var totalDate = Math.ceil(timeDiff / (1000 * 3600 * 24)+1);
+
+			// 전체 여행 일수를 sessionStorage에 저장
+			sessionStorage.setItem('totalDate', totalDate);
+			sessionStorage.setItem('se_date', startDate);
+            
+            var total_date = sessionStorage.getItem('totalDate'); // 수정된 부분
+            
+            if (!end_date && !start_date) {
+                alert("출발 날짜와 종료 날짜를 선택해주세요.");
+            } else if(!start_date) {
+                alert("출발 날짜를 선택해주세요.");
+            } else if(!end_date) {
+                alert("종료 날짜를 선택해주세요.");
+            } else if (start_date > end_date) {
+                alert("출발 날짜와 끝 날짜를 수정해주세요.");
+            } else if (start_date && end_date) {
+                alert("여행 일정이 저장되었습니다.\n출발 날짜: " + start_date + "\n종료 날짜: " + end_date + "\n전체 여행 일수: " + total_date);
+                tossDate(start_date, end_date,start_date2);
+                
+                
+                window.location.href = "/information";
+            } 
+        }
+
+        function tossDate(start_date, end_date,start_date2) {
+            // Flask에서 사용할 변수명으로 session에 저장
+            sessionStorage.setItem('start_date', start_date);
+            sessionStorage.setItem('end_date', end_date);
+            sessionStorage.setItem('start_date2',start_date2)
+        }
+        
+    </script>
+</body>
+</html>

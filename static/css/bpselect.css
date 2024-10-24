@@ -1,0 +1,188 @@
+html, body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif, 'Arial';
+  margin: 0;
+  padding: 0;
+  background-color: #D0E3FF;
+}
+.hidden {
+  display: none;
+}
+.date-time{
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 130%;
+  height: 30px;
+}
+.date-time a{
+  color: black;
+}
+#top-panel header{
+  display: flex;
+  justify-content: space-between;
+}
+#container {
+  display: flex;
+  flex-direction: row;
+}
+
+.left-panel,
+.middle-panel,
+.middlerightpanel,
+.rightpanel{
+  flex: 1;
+  padding: 10px;
+  background-color: #334EAC;
+  border: 2px solid rgba(255, 255, 255, .2);
+  border-radius: 8px;
+}
+.rightrightpanel {
+  flex: 2;
+  padding: 10px;
+  background-color: rgb(100, 131, 185);
+  border: 2px solid rgba(255, 255, 255, .2);
+  border-radius: 8px;
+  align-items: center;
+  justify-content: center;
+}
+.last-button{
+  display: flex;
+  padding: 8px;
+  margin-top: 50%;
+  box-sizing: border-box;
+  align-items:center;
+  justify-content:center;
+}
+#content-container {
+  padding: 20px;
+}
+
+button {
+  background-color: #334EAC;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 8px 16px;
+  font-size: 1em;
+  font-weight: bold;
+}
+#main-menu button{
+  background-color: #D0E3FF;
+  color: #334EAC;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 1em;
+  font-weight: bold;
+}
+#main-menu button:hover {
+  background-color: #7096D1;
+}
+li {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  margin-bottom: 5px;
+}
+a{
+  color: rgb(255, 255, 255);
+  font-weight: bold;
+}
+a:hover {
+  color: rgb(0, 94, 255); /* 원하는 색상으로 변경하세요 */
+}
+label {
+  display: flex;
+  background-color: #D0E3FF;
+  color: #334EAC;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 50%;
+  margin-bottom: 1%;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+#main-menu .countrylist .active-impormation label{
+  background-color: #4cafad;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  width: 100%;
+  margin-bottom: 100px;
+}
+button:hover {
+  background-color: #7096D1;
+}
+
+.navbar-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.menu-item-has-children {
+  margin-bottom: 20px;
+}
+
+.menu-icon {
+  margin-right: 10px;
+}
+#container {
+  display: flex;
+  justify-content: space-between;
+}
+
+#footer-panel {
+  width: 20%;
+}
+
+#recommendations {
+
+  width: 80%;
+  text-align: center;
+}
+
+#recommendations h3 {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.recommendation-item {
+  display: inline-block;
+  margin: 0 20px;
+}
+
+.recommendation-item img {
+  max-width: 100%;
+  height: auto;
+}
+.hidden {
+  display: none;
+}
+
+.date_time {
+  display: flex;
+  justify-content: center;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.date-count{
+  display: flex;
+  justify-content: center;
+  color: #ffffff;
+  font-size: 48px;
+}
+
+h3{
+  margin-top: 1px;
+  margin-bottom: 1px;
+}

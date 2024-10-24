@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Ela Admin - HTML5 Admin Template">
+    <link href="https://cdn.jsdelivr.net/npm/chartist@0.11.0/dist/chartist.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/jqvmap@1.5.1/dist/jqvmap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/weathericons@2.1.0/css/weather-icons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.9.0/dist/fullcalendar.min.css" rel="stylesheet" />
+    <link rel="apple-touch-icon" href="https://static.vecteezy.com/system/resources/previews/000/620/372/non_2x/aircraft-airplane-airline-logo-label-journey-air-travel-airliner-symbol-vector-illustration.jpg" sizes="10">
+    <link rel="shortcut icon" href="https://static.vecteezy.com/system/resources/previews/000/620/372/non_2x/aircraft-airplane-airline-logo-label-journey-air-travel-airliner-symbol-vector-illustration.jpg" sizes="10">
+    <title>여행지 고르는 창</title>
+    <link rel="stylesheet" href="static/css/bpselect.css">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script type="text/javascript" src="static/js/bpselect.js"></script>
+    <script>
+        var selectedLocationPanelId1; // 전역 변수 선언
+        var selectedLocationPanelId2; 
+        function saveSelectedLocation(location, panelId1,panelId2) {
+            selectedLocationPanelId1 = panelId1; // 선택한 지역의 togglePanel 값을 전역 변수에 저장
+            selectedLocationPanelId2 = panelId2;
+            $.ajax({
+                type: 'POST',
+                url: '/save_selected_location',
+                data: { 'selected_location': location },
+                success: function(response) {
+                    console.log(response);
+                    // 서버에서의 응답에 대한 처리
+                    if (response.status === 'success') {
+                        // 선택한 지역의 ATTRACTION_NAME을 가져오는 엔드포인트 호출
+                        setAttraction();
+                        console.log(location)
+                    } else {
+                        console.error('Failed to save selected location.');
+                    }
+                },
+                error: function(error) {
+                    console.error(error);
+                    // 오류 발생 시의 동작
+                }
+            });
+        }
+
+        function setAttraction() {
+            $.ajax({
+                type: 'GET',
+                url: '/get_recommendations',
+                success: function(response) {
+                    console.log(response);
+                    if (response.status === 'success') {
+                        updateRecommendationNames(response.attraction_names);
+                        var recommendationNames = response.attraction_names;
+        
+                        // get_attraction_name에서 가져온 attraction_names에서 제거
+                        $.ajax({
+                            type: 'GET',
+                            url: '/get_attraction_name',
+                            success: function(attractionResponse) {
+                                console.log(attractionResponse);
+                                if (attractionResponse.status === 'success') {
+                                    var attractionNames = attractionResponse.attraction_names;
+        
+                                    // 제거하는 부분
+                                    for (var i = 0; i < recommendationNames.length; i++) {
+                                        var index = attractionNames.indexOf(recommendationNames[i]);
+                                        if (index !== -1) {
+                                            attractionNames.splice(index, 1);
+                                        }
+                                    }
+        
+                                    // 업데이트
+                                    updateAttractionNames(attractionNames);
+                                } else {
+                                    console.error('Failed to get attraction names.');
+                                }
+                            },
+                            error: function(error) {
+                                console.error(error);
+                            }
+                        });
+                    } else {
+                        console.error('Failed to get recommendation names.');
+                    }
+                },
+                error: function(error) {
+                    console.error(error);
+                }
+            });
+        }
+
+        function updateRecommendationNames(recommendationNames) {
+            var recommendationList = $('.recommend-dropdown');
+            recommendationList.empty();
+        
+            for (var i = 0; i < recommendationNames.length; i++) {
+                var recommendation = recommendationNames[i];
+                var listItem = $('<li class="menu-item-has-children dropdown">');
+                var link = $('<a href="#" class="dropdown-toggle" onclick=" togglePanel(\'rightrightpanel\'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">')
+                    .text(recommendation)
+                    .on('click', (function(recommendationCopy) {
+                        return function() {
+                            saveSelectedAttraction(recommendationCopy);
+                        };
+                    })(recommendation))
+                    .appendTo(listItem);
+        
+                var closeButton = $('<button type="button" onclick="removeAttraction(\'' + recommendation + '\'); moveTo' + selectedLocationPanelId2 + '()">x</button>');
+                var linkButton = $('<button type="button" onclick="getGoogleMapLink(\'' + recommendation + '\')">?</button>');
+                listItem.append(linkButton,closeButton);
+                listItem.appendTo(recommendationList);
+            }
+        }
+        
+        function updateAttractionNames(attractionNames) {
+            var attractionList = $('.attraction-dropdown');
+            attractionList.empty();
+            for (var i = 0; i < attractionNames.length; i++) {
+                var attraction = attractionNames[i];
+                var listItem = $('<li class="menu-item-has-children dropdown">');
+                var link = $('<a href="#" class="dropdown-toggle" onclick="togglePanel(\'rightrightpanel\'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">')
+                    .text(attraction)
+                    .on('click', (function(attractionCopy) {
+                        return function() {
+                            saveSelectedAttraction(attractionCopy);
+                        };
+                    })(attraction))
+                    .appendTo(listItem);
+        
+                var closeButton = $('<button type="button" onclick="removeAttraction(\'' + attraction + '\'); moveTo' + selectedLocationPanelId1 + '()" >x</button>');
+        
+                var linkButton = $('<button type="button" onclick="getGoogleMapLink(\'' + attraction + '\')">?</button>');
+        
+                listItem.append(linkButton, closeButton);
+                listItem.appendTo(attractionList);
+            }
+        }
+        
+        function getGoogleMapLink(placeAddress) {
+            $.ajax({
+                type: 'POST',
+                url: '/get_attraction_name',
+                data: { 'place_address': placeAddress },
+                success: function(response) {
+                    console.log(response);
+                    if (response.status === 'success') {
+                        var mapLink = response.map_link;
+                        console.log('Received Map Link:', mapLink);
+        
+                        // 서버에서 받은 링크로 이동
+                        window.open(mapLink, 'GoogleMapPopup', 'width=1200,height=800');
+                    } else {
+                        console.error('Failed to get Google Map link.');
+                    }
+                },
+                error: function(error) {
+                    console.error(error);
+                }
+            });
+        }
+
+
+        // 선택된 관광지를 저장할 배열 정의
+        var selectedAttractions = [];
+
+        function saveSelectedAttraction(attraction) {
+            // 중복 체크 - 배열에 이미 존재하는 경우 추가하지 않음
+            if (!selectedAttractions.includes(attraction)) {
+                // 선택된 관광지를 배열에 추가
+                selectedAttractions.push(attraction);
+                // 선택된 관광지 목록을 출력
+                console.log('Selected Attractions:', selectedAttractions);
+                sessionStorage.setItem('selectedAttractions', JSON.stringify(selectedAttractions));
+            } else {
+                console.log('Attraction already selected:', attraction);
+            }
+        }
+
+        function removeAttraction(attraction) {
+            // 선택된 관광지 배열에서 특정 관광지 제거
+            var index = selectedAttractions.indexOf(attraction);
+            if (index !== -1) {
+                selectedAttractions.splice(index, 1);
+            }
+            console.log('Removed Attraction:', attraction);
+            console.log('Selected Attractions:', selectedAttractions);
+            sessionStorage.setItem('selectedAttractions', JSON.stringify(selectedAttractions));
+        }
+
+
+        
+    </script>
+
+</head>
+
+<body>
+    <section id="top-panel" class="top-panel">
+        <!-- Header-->
+        <header id="header" class="header">
+            <div class="top-left">
+
+               
+            </div>
+            <div class="top-right">
+                <div class="header-menu">
+                    <a class="nav-link" href="#">
+                        <i class="fa fa-power-off"></i>
+                        <button type="submit" class="btn" onclick="resetPage()">재설정</button>
+                    </a>
+                </div>
+            </div>
+        </header>
+        <div class="date-count">
+            <h3 id="datecount">DAY {{ datecount }} </h3>
+            <a href="#"></a>
+        </div>
+        <div class="date_time">
+            <h3 id="start_date"> {{start_date}}</h3>
+            <a href="#"></a>
+        </div>
+    </section>
+    <div id="container">
+        <section id="left-panel" class="left-panel">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav country-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="country">나라</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-france');" aria-haspopup="true"
+                                aria-expanded="false"></i>프랑스</a>
+
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-spain');" aria-haspopup="true" 
+                                aria-expanded="false"></i>스페인</a>
+                        
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-uk');" aria-haspopup="true" 
+                                aria-expanded="false"> </i>영국</a>
+                        
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-germany');" aria-haspopup="true" 
+                                aria-expanded="false"></i>독일</a>
+                            
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-nederland');" aria-haspopup="true" 
+                                aria-expanded="false"></i>네덜란드</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-portugal');" aria-haspopup="true" 
+                                aria-expanded="false"></i>포르투갈</a>
+                            
+                        </li>  
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-denmark');" aria-haspopup="true" 
+                                aria-expanded="false"></i>덴마크</a>
+                            
+                        </li>      
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-belguim');" aria-haspopup="true" 
+                                aria-expanded="false"></i>벨기에</a>
+                            
+                        </li>        
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-austria');" aria-haspopup="true" 
+                                aria-expanded="false"></i>오스트리아</a>
+                            
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-itary');" aria-haspopup="true" 
+                                aria-expanded="false"></i>이탈리아</a>
+                            
+                        </li>    
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-swiss');" aria-haspopup="true" 
+                                aria-expanded="false"></i>스위스</a>
+                            
+                        </li> 
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middle-panel-czech');" aria-haspopup="true" 
+                                aria-expanded="false"></i>체코</a>
+                            
+                        </li> 
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middle-panel-france" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelfranceparis'), togglePanel('rightpanelfranceparis'); saveSelectedLocation('파리', 'middlerightpanelfranceparis','rightpanelfranceparis');" aria-haspopup="true" aria-expanded="false">파리</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelfranceriox'), togglePanel('rightpanelfranceriox'); saveSelectedLocation('리옹','middlerightpanelfranceriox','rightpanelfranceriox');" aria-haspopup="true" aria-expanded="false">리옹</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelfrancenice'), togglePanel('rightpanelfrancenice'); saveSelectedLocation('니스','middlerightpanelfrancenice','rightpanelfrancenice');" aria-haspopup="true" aria-expanded="false">니스</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelfrancemarse'), togglePanel('rightpanelfrancemarse'); saveSelectedLocation('마르세유','middlerightpanelfrancemarse','rightpanelfrancemarse');" aria-haspopup="true" aria-expanded="false">마르세유</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-germany" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelgerfrank'), togglePanel('rightpanelgerfrank'); saveSelectedLocation('프랑크푸르트','middlerightpanelgerfrank','rightpanelgerfrank');" aria-haspopup="true" aria-expanded="false">프랑크푸르트</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelgermun'), togglePanel('rightpanelgermun'); saveSelectedLocation('뮌헨','middlerightpanelgermun','rightpanelgermun');" aria-haspopup="true" aria-expanded="false">뮌헨</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelgerberl'), togglePanel('rightpanelgerberl'); saveSelectedLocation('베를린','middlerightpanelgerberl','rightpanelgerberl');" aria-haspopup="true" aria-expanded="false">베를린</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelgerham'), togglePanel('rightpanelgerham'); saveSelectedLocation('함부르크','middlerightpanelgerham','rightpanelgerham');" aria-haspopup="true" aria-expanded="false">함부르크</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-spain" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelspainmardrid'), togglePanel('rightpanelspainmardrid');saveSelectedLocation('마드리드','middlerightpanelspainmardrid','rightpanelspainmardrid');" aria-haspopup="true"
+                                aria-expanded="false">마드리드</a>
+
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelspainsevia'), togglePanel('rightpanelspainsevia');saveSelectedLocation('세비야','middlerightpanelspainsevia','rightpanelspainsevia');" aria-haspopup="true"
+                                aria-expanded="false">세비야</a>
+
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelspainbarce'), togglePanel('rightpanelspainbarce');saveSelectedLocation('바르셀로나','middlerightpanelspainbarce','rightpanelspainbarce');" aria-haspopup="true"
+                                aria-expanded="false">바르셀로나</a>
+
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelspainmajor'), togglePanel('rightpanelspainmajor');saveSelectedLocation('팔마마요르카','middlerightpanelspainmajor','rightpanelspainmajor');" aria-haspopup="true"
+                                aria-expanded="false">팔마마요르카</a>
+
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelspaingranada'), togglePanel('rightpanelspaingranada');saveSelectedLocation('그라나다','middlerightpanelspaingranada','rightpanelspaingranada');" aria-haspopup="true"
+                                aria-expanded="false">그라나다</a>
+
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-uk" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpaneluklondon'), togglePanel('rightpaneluklondon'); saveSelectedLocation('런던','middlerightpaneluklondon','rightpaneluklondon');" aria-haspopup="true" aria-expanded="false">런던</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelukedin'), togglePanel('rightpanelukedin'); saveSelectedLocation('에든버러','middlerightpanelukedin','rightpanelukedin');" aria-haspopup="true" aria-expanded="false">에든버러</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelukman'), togglePanel('rightpanelukman'); saveSelectedLocation('맨체스터','middlerightpanelukman','rightpanelukman');" aria-haspopup="true" aria-expanded="false">맨체스터</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelukbirming'), togglePanel('rightpanelukbirming'); saveSelectedLocation('버밍엄','middlerightpanelukbirming','rightpanelukbirming');" aria-haspopup="true" aria-expanded="false">버밍엄</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-nederland" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelndarms'), togglePanel('rightpanelndarms'); saveSelectedLocation('암스테르담','middlerightpanelndarms','rightpanelndarms');" aria-haspopup="true" aria-expanded="false">암스테르담</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-portugal" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelptlis'), togglePanel('rightpanelptlis'); saveSelectedLocation('리스본','middlerightpanelptlis','rightpanelptlis');" aria-haspopup="true" aria-expanded="false">리스본</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelptporto'), togglePanel('rightpanelptporto'); saveSelectedLocation('포르토','middlerightpanelptporto','rightpanelptporto');" aria-haspopup="true" aria-expanded="false">포르토</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-denmark" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpaneldenco'), togglePanel('rightpaneldenco'); saveSelectedLocation('코펜하겐','middlerightpaneldenco','rightpaneldenco');" aria-haspopup="true" aria-expanded="false">코펜하겐</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpaneldenoden'), togglePanel('rightpaneldenoden'); saveSelectedLocation('오덴세','middlerightpaneldenoden','rightpaneldenoden');" aria-haspopup="true" aria-expanded="false">오덴세</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-belguim" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelbelbre'), togglePanel('rightpanelbelbre'); saveSelectedLocation('브뤼셀','middlerightpanelbelbre','rightpanelbelbre');" aria-haspopup="true" aria-expanded="false">브뤼셀</a>
+                        </li>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-austria" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelaustbin'), togglePanel('rightpanelaustbin'); saveSelectedLocation('비엔나','middlerightpanelaustbin','rightpanelaustbin');" aria-haspopup="true" aria-expanded="false">비엔나</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelauszar'), togglePanel('rightpanelauszar'); saveSelectedLocation('잘츠부르크','middlerightpanelauszar','rightpanelauszar');" aria-haspopup="true" aria-expanded="false">잘츠부르크</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-itary" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelitalyroma'), togglePanel('rightpanelitaryroma'); saveSelectedLocation('로마','middlerightpanelitalyroma','rightpanelitaryroma');" aria-haspopup="true" aria-expanded="false">로마</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelitalypiren'), togglePanel('rightpanelitarypiren'); saveSelectedLocation('피렌체','middlerightpanelitalypiren','rightpanelitarypiren');" aria-haspopup="true" aria-expanded="false">피렌체</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelitalybenis'), togglePanel('rightpanelitarybenis'); saveSelectedLocation('베니스','middlerightpanelitalybenis','rightpanelitarybenis');" aria-haspopup="true" aria-expanded="false">베니스</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelitalynapoli'), togglePanel('rightpanelitarynapoli'); saveSelectedLocation('나폴리','middlerightpanelitalynapoli','rightpanelitarynapoli');" aria-haspopup="true" aria-expanded="false">나폴리</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelitalymilan'), togglePanel('rightpanelitarymilan'); saveSelectedLocation('밀라노', 'middlerightpanelitalymilan', 'rightpanelitarymilan');" aria-haspopup="true" aria-expanded="false">밀라노</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-swiss" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelswisschi'), togglePanel('rightpanelswisschi'); saveSelectedLocation('취리히','middlerightpanelswisschi','rightpanelswisschi');" aria-haspopup="true" aria-expanded="false">취리히</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelswissjeneba'), togglePanel('rightpanelswissjeneba'); saveSelectedLocation('제네바','middlerightpanelswissjeneba','rightpanelswissjeneba');" aria-haspopup="true" aria-expanded="false">제네바</a>
+                        </li>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelswissinter'), togglePanel('rightpanelswissinter'); saveSelectedLocation('인터라켄','middlerightpanelswissinter','rightpanelswissinter');" aria-haspopup="true" aria-expanded="false">인터라켄</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+        <section id="middle-panel-czech" class="middle-panel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav location-dropdown">
+                        <li class="active">
+                            &nbsp;<label for="location">지역</label>
+                        </li>
+                        <br>
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="togglePanel('middlerightpanelczepra'), togglePanel('rightpanelczepra'); saveSelectedLocation('프라하','middlerightpanelczepra','rightpanelczepra');" aria-haspopup="true" aria-expanded="false">프라하</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </section>
+
+        <section id="middlerightpanelfranceparis" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); saveAndTogglePanel('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <a href="#"><button type="button" onclick="getGoogleMapLink('{{ placeAddress }}', '{{ attraction }}')">?</button></a>
+                            <button type="button" onclick="moveTorightpanelfranceparis()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelfranceparis" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTomiddlerightpanelfranceparis()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                    
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelfrancenice" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelfrancenice()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelfrancenice" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelfrancenice()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelfrancemarse" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelfrancemarse()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelfrancemarse" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelfrancemarse()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelfranceriox" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelriox()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelfranceriox" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTomiddlerightpanelriox()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+
+
+        <section id="middlerightpaneluklondon" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpaneluklondon()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpaneluklondon" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpaneluklondon()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelukedin" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+        
+                        {% for attraction in attraction_names %}
+                        
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelukedin()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelukedin" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelukedin()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelukman" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelukman()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelukman" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelukman()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelukbirming" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelukbirming()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelukbirming" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelukbirming()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section> 
+             
+
+        <section id="middlerightpanelspainmardrid" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelspainmardrid()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelspainmardrid" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelspainmardrid()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelspainbarce" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelspainbarce()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelspainbarce" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelspainbarce()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelspainsevia" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelspainsevia()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelspainsevia" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelspainsevia()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelspainmajor" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelspainmajor()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelspainmajor" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelspainmajor()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelspaingranada" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelspaingranada()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelspaingranada" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelspaingranada()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+
+        <section id="middlerightpanelgerfrank" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelgerfrank()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelgerfrank" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelgerfrank()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelgermun" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelgermun()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelgermun" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelgermun()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelgerberl" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelgerberl()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelgerberl" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelgerberl()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelgerham" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelgerham()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelgerham" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelgerham()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelptlis" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelptlis()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelptlis" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelptlis()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelptporto" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelptporto()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelptporto" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelptporto()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpaneldenco" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpaneldenco()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpaneldenco" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpaneldenco()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpaneldenoden" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpaneldenoden()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpaneldenoden" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpaneldenoden()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelbelbre" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelbelbre()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelbelbre" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelbelbre()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelndarms" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelndarms()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelndarms" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelndarms()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelaustbin" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelaustbin()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelaustbin" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelaustbin()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelauszar" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelauszar()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelauszar" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelauszar()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelitalyroma" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelitalyroma()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelitaryroma" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelitaryroma()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelitalypiren" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelitalypiren()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelitarypiren" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelitarypiren()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelitalybenis" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelitalybenis()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelitarybenis" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelitarybenis()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelitalynapoli" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelitalynapoli()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelitarynapoli" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelitarynapoli()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelitalymilan" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelitalymilan()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelitarymilan" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelitarymilan()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelswisschi" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelswisschi()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelswisschi" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelswisschi()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelswissinter" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelswissinter()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelswissinter" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                     <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelswissinter()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelswissjeneba" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelswissjeneba()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelswissjeneba" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelswissjeneba()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="middlerightpanelczepra" class="middlerightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="attraction">관광지</label>
+                    </li>
+                    <br>
+                    <ul class="nav navbar-nav attraction-dropdown">
+                        {% for attraction in attraction_names %}
+                        <li class="menu-item-has-children dropdown">
+                            <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                {{ attraction }}
+                            </a>
+                            <button type="button" onclick="moveTomiddlerightpanelczepra()">x</button>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+        <section id="rightpanelczepra" class="rightpanel" style="display: none;">
+            <nav class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <li class="active">
+                        &nbsp;<label for="recommend">추천지</label>
+                    </li>
+                    <br> 
+                    <ul class="nav navbar-nav recommend-dropdown">
+                        {% for attraction in attraction_names %}
+                            <li class="menu-item-has-children dropdown">
+                                <a href="#" class="dropdown-toggle" onclick="saveSelectedAttraction('{{ attraction }}'); togglePanel('rightrightpanel'); moveTorightrightpanel();" aria-haspopup="true" aria-expanded="false">
+                                    {{ attraction }}
+                                </a>
+                                <button type="button" onclick="moveTorightpanelczepra()">x</button>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </nav>
+        </section>
+
+        <section id="rightrightpanel" class="rightrightpanel" style="display: none;">
+            <div class="navbar navbar-expand-sm navbar-default">
+                <div id="main-menu" class="main-menu collapse navbar-collapse">
+                    <ul class="nav navbar-nav imformation-dropdown">
+                        <li class="active">
+                            <label for="imformation">리스트</label>
+                        </li>
+                    </ul>
+                    <div class="last-button">
+                        <button type="button" class="btn" onclick="goToBpSleep()">확인</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+        <script>
+            var datecount = {{datecount}};
+            var start_date = sessionStorage.getItem('start_date');
+            
+            if (start_date) {
+                document.querySelector('.date_time h3').textContent = start_date;
+            }
+            if (datecount) {
+                
+            }
+            
+            function resetPage() {
+
+
+                window.location.href = "/bpselect";
+                console.log(datecount)
+            }
+            
+            
+            function goToBpSleep() {
+
+                window.location.href = "/bpsleep?datecount=" + datecount;
+            }
+        </script>       
+    </div>
+</body>

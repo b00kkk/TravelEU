@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Survey Form</title>
+  <link rel="stylesheet" href="static/css/information.css">
+  <link href="https://fonts.googleapis.com/css?family=Quicksand|Roboto" rel="stylesheet">
+  <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+</head>
+<body>
+  <header>
+    <div id="title"><h1>사용자 정보 조사</h1></div>
+  </header>
+
+  <form id="survey-form" action="{{ url_for('save_survey_data') }}" method="post">
+    <div id="description"> 추천을 위해 사용자의 여행 정보를 입력해주세요.</div><br>
+  
+    <fieldset class="fieldset">
+      <div class="sub-group">
+        <label class="left" id="age_number" for="number">*나이:</label>
+        <input type="number" name="Age" placeholder="Age" min="1" max="100" class="right input-field" id="number">
+      </div>
+    </fieldset>
+  
+    <fieldset class="fieldset">
+      <div class="sub-group">
+        <label class="left" id="group_radio">*관계:</label>
+        <ul style="list-style: none;" id="group_radio" class="right">
+          <li class="radio"><label><input type="radio" name="relationship" value="1">혼자</label></li>
+          <li class="radio"><label><input type="radio" name="relationship" value="2">연인</label></li>
+          <li class="radio"><label><input type="radio" name="relationship" value="3">친구</label></li>
+          <li class="radio"><label><input type="radio" name="relationship" value="4">가족</label></li>
+        </ul>
+      </div>
+    </fieldset>
+    
+    <fieldset class="fieldset">
+      <div class="sub-group">
+        <label class="left" id="sex_radio">*성별:</label>
+        <ul style="list-style: none" id="sex_radio" class="right">
+          <li class="radio"><label><input name="radio-buttons" value="1" type="radio" class="recommendation">남성</label></li>
+          <li class="radio"><label><input name="radio-buttons" value="2" type="radio" class="recommendation">여성</label></li>
+        </ul>
+      </div>
+    </fieldset>
+  
+    <div class="commentbox">
+      <button id="save" onclick="save_information()" type="button">저장</button>
+    </div>
+  </form>
+  
+
+  <div class="button">
+    <button id="next" type="button">다음</button>
+  </div>
+
+  
+ <!-- information.html -->
+
+<!-- 기존 코드 생략 -->
+
+<script>
+  State = 0;
+
+  function save_information() {
+    var age_number = parseInt(document.getElementById("number").value, 10);
+    var group_radio = parseInt(document.querySelector('input[name="relationship"]:checked').value,10);
+    var sex_radio = parseInt(document.querySelector('input[name="radio-buttons"]:checked').value,10);
+
+    if (!age_number || !group_radio || !sex_radio) {
+      alert("나이, 관계, 성별을 선택해주세요.");
+    } else {
+      sessionStorage.setItem('age_number', age_number);
+      sessionStorage.setItem('group_radio', group_radio);
+      sessionStorage.setItem('sex_radio', sex_radio);
+
+      // 여행자 정보를 서버로 전송하는 함수 호출
+      sendInformationToServer();
+
+      alert("여행자 정보가 저장되었습니다.\n나이: " + age_number + "\n관계: " + group_radio + "\n성별: " + sex_radio);
+      State = 1;
+
+      // 여행자 정보를 서버로 전송하는 함수 호출 삭제
+      // sendInformationToServer();
+    }
+  }
+
+  function sendInformationToServer() {
+    // 여행자 정보를 JSON 형태로 변환
+    var surveyData = JSON.stringify({
+      'age': sessionStorage.getItem('age_number'),
+      'relationship': sessionStorage.getItem('group_radio'),
+      'gender': sessionStorage.getItem('sex_radio')
+    });
+
+    // AJAX를 사용하여 서버로 데이터 전송
+    $.ajax({
+      type: "POST",
+      url: "/save_survey_data_to_main",
+      contentType: "application/json;charset=UTF-8",
+      data: surveyData,
+      success: function(response) {
+        console.log(response);
+      },
+      error: function(error) {
+        console.log(error);
+      }
+    });
+  }
+
+  // 페이지 로딩 시 자동으로 함수 호출
+  document.getElementById("next").addEventListener("click", function() {
+    next_page();
+  });
+
+  function next_page() {
+    if (State) {
+      window.location.href = "/bpselect";
+    } else {
+      alert("여행자 정보가 저장되지 않았습니다.")
+    }
+  }
+</script>
+
+</body>
+</html>

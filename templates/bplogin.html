@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GNK</title>
+    <link rel="stylesheet" href="static/css/bplogin.css">
+</head>
+<body>
+    <div class="bplogin">
+
+
+        <form action="/login" method="post">
+            <h1>Login</h1>
+            <div class="input-box">
+                <label for="remember">ID: </label>&nbsp;
+                <input type="text" placeholder="Username" name="username" required>
+                <i class='bx bxs-user'></i>
+            </div>
+            <div class="input-box">
+                <label for="remember">PW: </label>
+                <input type="password" placeholder="Password" name="password" required>
+                <i class='bx bxs-lock-alt'></i>
+                {% with messages = get_flashed_messages() %}
+                  {% if messages %}
+                    <div class="flash-messages">
+                      {% for message in messages %}
+                        <div class="flash-message">{{ message }}</div>
+                      {% endfor %}
+                    </div>
+                  {% endif %}
+                {% endwith %}
+            </div>
+            <div class="check-box">
+                <label for="create">Create account!&nbsp;&nbsp;<a href="{{ url_for('signup_page') }}">Sign up</a></label>
+            </div>            
+            <button type="submit" class="btn">Login</button>
+        </form>
+    </div>
+</body>
+</html>

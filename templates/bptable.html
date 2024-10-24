@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="Ela Admin - HTML5 Admin Template">
+    <link href="https://cdn.jsdelivr.net/npm/chartist@0.11.0/dist/chartist.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/jqvmap@1.5.1/dist/jqvmap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.9.0/dist/fullcalendar.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pixeden-stroke-7-icon@1.2.3/pe-icon-7-stroke/dist/pe-icon-7-stroke.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/weathericons@2.1.0/css/weather-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.0/css/flag-icon.min.css">
+    <link rel="apple-touch-icon" href="https://static.vecteezy.com/system/resources/previews/000/620/372/non_2x/aircraft-airplane-airline-logo-label-journey-air-travel-airliner-symbol-vector-illustration.jpg" sizes="10">
+    <link rel="shortcut icon" href="https://static.vecteezy.com/system/resources/previews/000/620/372/non_2x/aircraft-airplane-airline-logo-label-journey-air-travel-airliner-symbol-vector-illustration.jpg" sizes="10">
+    <title>최종 결과물</title>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="static/js/bptable.js"></script>
+    <link rel="stylesheet" href="static/css/bptable.css">
+</head>
+
+<body>
+    <h2>여행일정표 </h2>
+    <div class="table-collection">
+    <script>
+        const totalDate = sessionStorage.getItem('totalDate');
+        console.log(totalDate);
+        const start_date2=sessionStorage.getItem('start_date2');
+        console.log(start_date2);
+        const daylocated = {{ daylocated|tojson|safe }};
+        const dayAttractions = {{ dayAttractions|tojson|safe }};
+        console.log(dayAttractions);
+        const daymode = {{ daymode|tojson|safe }};
+        console.log(daymode);
+        const googleMapsApiKey = "AIzaSyC26KdaBpD_WPB6-jmXSIjuhcTxemLTlg8";
+        // Select the table-collection div
+        const tableCollection = document.querySelector('.table-collection');
+
+        
+
+        for (let i = 0; i < totalDate; i++) {
+            const sectionElement = document.createElement('section');
+            sectionElement.className = 'table' + (i + 1);
+            sectionElement.id = 'table' + (i + 1);
+            const currentDate = new Date(start_date2);
+            currentDate.setDate(currentDate.getDate() + i);
+                // 내부 요소 생성
+                const generateAttractionBox = (order, time, attractionInfo,attractionInfo2, transportationTime, daymodea, located) => {
+                    // daymode가 "transit"이면 "fa fa-bus", 그렇지 않으면 "fa fa-car"가 됨
+                    let iconClass = (daymodea === "transit") ? "fa fa-bus" : "fa fa-car";
+                    
+                    // 이 부분이 각 관광지 상자를 생성하는 HTML 코드야
+                    return `
+                        <li class="box">
+                            <div class="order-time">
+                                <div class="order">${order}</div>
+                                <div class="time">${time}</div>
+                            </div>
+                            <div class=attraction-picture>
+                                <div class="arrow">
+                                    <i class="fa fa-ellipsis-v"></i>
+                                    <i class="fa fa-ellipsis-v"></i>
+                                    <i class="fa fa-ellipsis-v"></i>
+                                    <i class="fa fa-ellipsis-v"></i>
+                                </div>
+                                <div class="attraction">
+                                    <div class="attraction-modify">관광지</div>
+                                    <div class="attraction-name">${attractionInfo}</div>
+                                </div>
+                                <div class="picture">
+                                </div>
+                            </div>
+                            <div class="icon-move-time">
+                                <a href="#" onclick="toggleMap(this)"><div id="information1" class="icon"><i class="${iconClass}"></i></div></a>
+                                <div class="move-time">${transportationTime}</div>
+                                <iframe class="map-iframe" width='250' height='250' frameborder='0' style='border:0; display: none;'
+                                        src='https://www.google.com/maps/embed/v1/directions?key=${googleMapsApiKey}&origin=${encodeURIComponent(located + ',' + attractionInfo)}&destination=${encodeURIComponent(located+','+attractionInfo2)}&mode=${daymodea}'></iframe>
+                            </div>
+                        </li>
+                    `;
+                };
+                
+
+                const attractionBoxes = [];
+
+                // 수정된 부분: dayAttractions[i]의 존재 여부 확인
+                if (dayAttractions[i]) {
+                    for (let j = 0; j < dayAttractions[i].length-1; j++) {
+                        const order = j + 1;
+                        const time = "";  // 여기에 실제 시간을 추가하세요.
+                        const attractionInfo = dayAttractions[i][j];
+                        const attractionInfo2= dayAttractions[i][j+1];
+                        const transportationTime = " ";  // 여기에 실제 이동시간을 추가하세요.
+                        const daymodea = daymode[i]; // daymode 값 가져오기
+                        const located = daylocated[i];
+                        attractionBoxes.push(generateAttractionBox(order, time, attractionInfo,attractionInfo2, transportationTime, daymodea, located));
+                    }
+                    
+                }
+
+                sectionElement.innerHTML = `
+                    <div class="city">
+                        <h3>${daylocated[i]}</h3>
+                    </div>
+                    <div class="date">
+                        <h3>${i + 1} 일차</h3>
+                        <div id="startDate">${currentDate.toISOString().split('T')[0]}</div>
+                    </div>
+                    <div class="travel-plan">
+                        ${attractionBoxes.join('')}
+                    </div>
+                    <div class="order-time">
+                        <div class="order">${dayAttractions[i].length}</div>
+                        <div class="time"></div>
+                    </div>
+                    <div class=attraction-picture>
+                        <div class="arrow">
+                            <i class="fa fa-ellipsis-v"></i>
+                            <i class="fa fa-ellipsis-v"></i>
+                            <i class="fa fa-ellipsis-v"></i>
+                            <i class="fa fa-ellipsis-v"></i>
+                        </div>
+                        <div class="attraction">
+                            <div class="attraction-modify">숙소</div>
+                            <div class="attraction-name">${dayAttractions[i][dayAttractions[i].length-1]}</div>
+                        </div>
+                        <div class="picture">
+                        </div>
+                    </div>
+                `;
+
+                tableCollection.appendChild(sectionElement);
+            }
+        </script>
+        <script>
+            function toggleMap(iconLink) {
+                const iconMoveTimeDiv = iconLink.closest('.icon-move-time');
+                const mapIframe = iconMoveTimeDiv.querySelector('.map-iframe');
+                
+                // 토글: 지도의 표시 여부를 바꿉니다.
+                mapIframe.style.display = (mapIframe.style.display === 'none' || mapIframe.style.display === '') ? 'block' : 'none';
+            }
+            
+        </script>
+        
+    </div>
+</body>
+
+</html>

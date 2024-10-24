@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>이동수단선택</title>
+    <link rel="apple-touch-icon" href="https://static.vecteezy.com/system/resources/previews/000/620/372/non_2x/aircraft-airplane-airline-logo-label-journey-air-travel-airliner-symbol-vector-illustration.jpg" sizes="10">
+    <link rel="shortcut icon" href="https://static.vecteezy.com/system/resources/previews/000/620/372/non_2x/aircraft-airplane-airline-logo-label-journey-air-travel-airliner-symbol-vector-illustration.jpg" sizes="10">
+    <link rel="stylesheet" href="static/css/bpmove.css">
+    <link href="https://cdn.jsdelivr.net/npm/chartist@0.11.0/dist/chartist.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/jqvmap@1.5.1/dist/jqvmap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@3.9.0/dist/fullcalendar.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lykmapipo/themify-icons@0.1.2/css/themify-icons.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pixeden-stroke-7-icon@1.2.3/pe-icon-7-stroke/dist/pe-icon-7-stroke.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/weathericons@2.1.0/css/weather-icons.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.0/css/flag-icon.min.css">
+    <script src="static/js/bpmove.js"></script>
+</head>
+<body>
+    <div class="bpmove">
+        <form action="">
+            <h1>이동수단선택</h1>
+            <h3>이동수단을 선택해주세요</h3>
+
+            <div class="select-button">
+                <button type="button" class="select-btn" onclick="selectModes('transit')"><i class="fa fa-bus"></i>대중교통</button>
+                <button type="button" class="select-btn" onclick="selectModes('driving')"><i class="fa fa-car"></i>승용차</button>
+            </div>
+            <div class="confirm-button">
+                <button type="button" class="confirm-btn" onclick="back()">닫기</button>
+                <button type="button" class="confirm-btn" onclick="generateSchedule()">일정 선택</button>
+            </div>            
+            <script>
+
+                function selectModes(mode) {
+                    sessionStorage.setItem('selectedModes', mode);
+                    alert(mode === 'transit' ? '대중교통을 선택하셨습니다.' : '승용차를 선택하셨습니다.');
+                    console.log(mode)
+                }
+        
+                function generateSchedule() {
+                    var selectedModes = sessionStorage.getItem('selectedModes');
+                    if (!selectedModes) {
+                        alert('이동 모드를 선택해주세요.');
+                        return;
+                    }
+                    
+                    var selectedAttractions = sessionStorage.getItem('selectedAttractions');
+                    var dataToSend = {
+                        selectedAttractions: selectedAttractions,
+                        selectedModes: selectedModes
+                    };
+                    
+                    var xhr = new XMLHttpRequest();
+                    xhr.open('POST', '/process_selected_attractions', true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState == XMLHttpRequest.DONE) {
+                            var response = JSON.parse(xhr.responseText);
+                            console.log(response.result);
+                            console.log(response.daymode);
+                        }
+                    };
+
+                    xhr.send(JSON.stringify(dataToSend));
+                    
+                    alert('일정을 생성하고 결과창으로 이동합니다.');
+                    window.location.href='/bptable'
+                    sessionStorage.removeItem(selectedModes);
+                }
+                
+                function back() {
+                    sessionStorage.removeItem(selectedModes);
+                    window.location.href = '/bpselect'
+                }
+
+                
+            </script>
+        </form>
+    </div>
+</body>

@@ -1,0 +1,111 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #D0E3FF;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+}
+
+.bsignup {
+    background-color: #334EAC;
+    width: 350px;
+    padding: 8px;
+    border: 2px solid rgba(255, 255, 255, .2);
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(252, 252, 252, 0.929);
+    text-align: center;
+    align-items: center;
+    justify-content: center;
+}
+
+.bsignup form {
+    position: relative;
+    align-items: center;
+    justify-content: center;
+}
+
+h2 {
+    color: #fff;
+}
+
+.bsignup .input-box {
+    display: flex;
+    flex-direction: row; /* 가로로 배치 */
+    align-items: center;
+    width: 90%;
+    padding: 6px;
+    margin: 10px auto;
+    cursor: pointer;
+}
+
+.bsignup .input-box input {
+    width: 60%;
+    padding: 8px;
+    border: 2px solid rgba(255, 255, 255, .2);
+    border-radius: 5px;
+    background-color: #ecf3f4;
+    color: black;
+    cursor: pointer;
+    margin: 0 10px 0 0; /* 간격 조절 */
+}
+
+.bsignup .input-box button {
+    width: 10%;
+    padding: 3px;
+    border: none;
+    border-radius: 4px;
+    background-color: #D0E3FF;
+    color: #334EAC;
+    cursor: pointer;
+    font-size: 20%;
+    font-weight: unset;
+    margin-left: auto; /* 우측에 밀착 */
+}
+
+.input-box label {
+    color: #fff;
+    font-size: small;
+    margin-bottom: 5px;
+    min-width: 100px; /* 최소 너비 설정 */
+    display: flex; /* 라벨을 인라인 블록으로 설정하여 너비 적용 */
+    flex-direction: row;
+}
+
+.bsignup .check-box {
+    display: flex;
+    flex-direction: row; /* 가로로 정렬 */
+    justify-content:space-evenly; /* 여백 자동 설정 */
+    align-items: center; /* 세로 중앙 정렬을 위해 추가 */
+    margin-bottom: 10px;
+    margin-right: 60px;
+}
+
+.bsignup .check-box label {
+    color: #fff;
+    font-size: small;
+}
+
+.bsignup .check-box label[for="gender"] {
+    color: #fff;
+    font-size: small;
+    margin-right: 50px; /* 좌측 여백을 우측으로 조정 */
+}
+
+.bsignup button {
+    background-color: #D0E3FF;
+    color: #334EAC;
+    padding: 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin: 15px 0;
+    width: 40%;
+}
+
+button:hover {
+    background-color: #D0E3FF;
+}
