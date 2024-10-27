@@ -20,13 +20,16 @@ router = APIRouter(
 )
 
 
-@router.post("/create", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/create", status_code=status.HTTP_201_CREATED)
 def user_create(_user_create: user_schema.UserCreate, db: Session = Depends(get_db)):
     user = user_crud.get_existing_user(db, user_create=_user_create)
     if user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="이미 존재하는 사용자입니다.")
-    user_crud.create_user(db=db, user_create=_user_create)
+    created_user = user_crud.create_user(db=db, user_create=_user_create)
+
+    # 생성된 사용자 정보를 반환
+    return created_user
 
 @router.post("/login", response_model=user_schema.Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),
@@ -36,11 +39,11 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),
     if not user or not pwd_context.verify(form_data.password, user.password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail="Incorrect id or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     data = {
-        "sub": user.username,
+        "sub": user.id,
         "exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     }
     access_token = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
@@ -48,5 +51,5 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),
     return {
         "access_token": access_token,
         "token_type": "bearer",
-        "username": user.username
+        "id": user.id
     }

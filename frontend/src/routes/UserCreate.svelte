@@ -1,11 +1,15 @@
 <script>
     import { push } from 'svelte-spa-router'
+    import fastapi from "../lib/api"
+    import Error from "../components/Error.svelte"
 
+    let error = { detail: [] } 
     let id = ''
     let password1 = ''
     let password2 = ''
     let gender = ''
     let age = ''
+    
 
     function post_user(event) {
         event.preventDefault()
@@ -17,11 +21,22 @@
             gender: gender,
             age: age,
         }
+        fastapi('post', url, params, 
+            (json) => {
+                console.log('성공')
+                push('/user-login')
+            },
+            (json_error) => {
+                console.log('실패')
+                error = json_error
+            }
+        )
     }
 </script>
 
 <div class="container">
     <h5 class="my-3 border-bottom pb-2">회원 가입</h5>
+    <Error error={error} />
     <form method="post">
         <div class="mb-3">
             <label for="id">사용자 아이디</label>
@@ -37,7 +52,7 @@
         </div>
         <div class="mb-3">
             <label for="gender">성별</label>
-            <input type="text" class="form-control" id="geder" bind:value="{gender}">
+            <input type="text" class="form-control" id="gender" bind:value="{gender}">
         </div>
         <div class="mb-3">
             <label for="age">나이</label>

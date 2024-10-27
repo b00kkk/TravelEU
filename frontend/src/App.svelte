@@ -7,8 +7,8 @@
 
   const routes = {
     '/': Home,
-    '/user-login': UserLogin,
     '/user-create': UserCreate,
+    '/user-login': UserLogin,
   }
 </script>
 

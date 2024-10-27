@@ -1,4 +1,4 @@
-from pydantic import BaseModel, field_validator, EmailStr
+from pydantic import BaseModel, field_validator
 from pydantic_core.core_schema import FieldValidationInfo
 
 class UserCreate(BaseModel):
@@ -10,7 +10,7 @@ class UserCreate(BaseModel):
 
     @field_validator('id', 'password1', 'password2', 'gender', 'id')
     def not_empty(cls, v):
-        if not v or not v.strip():
+        if not v or (isinstance(v, str) and not v.strip()) or (isinstance(v, int) and v == 0):
             raise ValueError('빈 값은 허용되지 않습니다.')
         return v
 

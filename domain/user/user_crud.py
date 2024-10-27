@@ -14,9 +14,7 @@ def create_user(db: Session, user_create: UserCreate):
     db.commit()
 
 def get_existing_user(db: Session, user_create: UserCreate):
-    return db.query(User).filter(
-        (User.id == user_create.id) 
-    ).first()
+    return db.query(User).filter(User.id == user_create.id).first()
 
 def get_user(db: Session, id: str):
     return db.query(User).filter(User.id == id).first()
