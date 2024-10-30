@@ -1,19 +1,20 @@
-import qs from "qs"
+import qs from "qs";
 
-const fastapi = (operation, url, params, success_callback, failure_callback) => {
-    let method = operation
-    let content_type = 'application/json'
-    let body = JSON.stringify(params)
+// FastAPI 호출 함수
+const fastapi = async (operation, url, params) => {
+    let method = operation;
+    let content_type = 'application/json';
+    let body = JSON.stringify(params);
 
-    if(operation === 'login') {
-        method = 'post'
-        content_type = 'application/x-www-form-urlencoded'
-        body = qs.stringify(params)
+    if (operation === 'login') {
+        method = 'post';
+        content_type = 'application/x-www-form-urlencoded';
+        body = qs.stringify(params);
     }
 
-    let _url = import.meta.env.VITE_SERVER_URL+url
-    if(method === 'get') {
-        _url += "?" + new URLSearchParams(params)
+    let _url = import.meta.env.VITE_SERVER_URL + url;
+    if (method === 'get') {
+        _url += "?" + new URLSearchParams(params);
     }
 
     let options = {
@@ -21,35 +22,41 @@ const fastapi = (operation, url, params, success_callback, failure_callback) => 
         headers: {
             "Content-Type": content_type
         }
-    }
+    };
 
     if (method !== 'get') {
-        options['body'] = body
+        options.body = body;
     }
 
-    console.log(`Fetching ${_url} with method ${method} and body: ${body}`)
+    console.log(`Fetching ${_url} with method ${method} and body: ${body}`);
 
-    fetch(_url, options)
-        .then(response => {
-            console.log(`Response status: ${response.status}`)
-            response.json()
-                .then(json => {
-                    if(response.status >= 200 && response.status < 300) {  // 200 ~ 299
-                        if(success_callback) {
-                            success_callback(json)
-                        }
-                    }else {
-                        if (failure_callback) {
-                            failure_callback(json)
-                        }else {
-                            alert(JSON.stringify(json))
-                        }
-                    }
-                })
-                .catch(error => {
-                    alert(JSON.stringify(error))
-                })
-        })
-}
+    try {
+        const response = await fetch(_url, options);
+        console.log(`Response status: ${response.status}`);
 
-export default fastapi
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const json = await response.json();
+        return json; // 성공 시 JSON 데이터 반환
+    } catch (error) {
+        alert(JSON.stringify(error));
+        throw error; // 오류 발생 시 다시 던져서 처리 가능
+    }
+};
+
+// 관광지 정보를 가져오는 함수
+export const fetchSpots = async (region) => {
+    const params = { location_id: region };
+    try {
+        const response = await fastapi('get', '/api/spot/spots', params);
+        console.log('Response from fetchSpots:', response); // 응답 확인
+        return response; // 비동기 호출
+    } catch (error) {
+        console.error('Error in fetchSpots:', error);
+        throw error; // 오류 발생 시 다시 던져서 처리 가능
+    }
+};
+
+export default fastapi;
