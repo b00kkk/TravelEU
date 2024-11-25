@@ -39,6 +39,7 @@ const fastapi = async (operation, url, params) => {
         }
 
         const json = await response.json();
+        console.log('응답 데이터 파싱 완료:', json);
         return json; // 성공 시 JSON 데이터 반환
     } catch (error) {
         alert(JSON.stringify(error));

@@ -3,29 +3,31 @@
     import fastapi from "../lib/api"
     import Error from "../components/Error.svelte"  
     import { access_token, id, is_login } from "../lib/store"
+    import { tick } from 'svelte'
 
     let error = {detail:[]}
     let login_id = ""
     let login_password = ""
 
-    function login(event) {
-        event.preventDefault()
+    async function login(event) {
+        event.preventDefault();
         let url = "/api/user/login"
         let params = {
             username: login_id,
             password: login_password,
         }
-        fastapi('login', url, params, 
-            (json) => {
+        
+        const json = await fastapi('login', url, params);
+       
+        if (json)  {
+                console.log('로그인성공')
                 $access_token = json.access_token
                 $id = json.id
                 $is_login = true
                 push("/")
-            },
-            (json_error) => {
+        }else {
                 error = json_error
             }
-        )
     }
 </script>
 
