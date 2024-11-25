@@ -26,10 +26,12 @@ def user_create(_user_create: user_schema.UserCreate, db: Session = Depends(get_
     if user:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT,
                             detail="이미 존재하는 사용자입니다.")
-    created_user = user_crud.create_user(db=db, user_create=_user_create)
-
+    
+    # 사용자 생성
+    user_crud.create_user(db=db, user_create=_user_create)
+    
     # 생성된 사용자 정보를 반환
-    return created_user
+    return {"id": _user_create.id, "gender": _user_create.gender, "age": _user_create.age}
 
 @router.post("/login", response_model=user_schema.Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(),

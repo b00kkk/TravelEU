@@ -11,26 +11,27 @@
     let age = ''
     
 
-    function post_user(event) {
-        event.preventDefault()
+    async function post_user(event) {
+        event.preventDefault();
         let url = "/api/user/create"
         let params = {
             id: id,
             password1: password1,
             password2: password2,
-            gender: gender,
-            age: age,
-        }
-        fastapi('post', url, params, 
-            (json) => {
+            gender: parseInt(gender),
+            age: parseInt(age)
+        };
+        const json = await fastapi('post', url, params);
+        
+        if (json) {
                 console.log('성공')
                 push('/user-login')
-            },
-            (json_error) => {
+            }
+        else{
                 console.log('실패')
                 error = json_error
             }
-        )
+        
     }
 </script>
 
