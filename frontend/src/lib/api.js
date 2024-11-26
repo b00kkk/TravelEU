@@ -47,7 +47,9 @@ const fastapi = async (operation, url, params) => {
     }
 };
 
-// 관광지 정보를 가져오는 함수
+
+
+// 모든 관광지 정보를 가져오는 함수
 export const fetchSpots = async (region) => {
     const params = { location_id: region };
     try {
@@ -57,6 +59,21 @@ export const fetchSpots = async (region) => {
     } catch (error) {
         console.error('Error in fetchSpots:', error);
         throw error; // 오류 발생 시 다시 던져서 처리 가능
+    }
+};
+
+
+export const fetchRecommendedSpots = async (region, gender, age, relationship) => {
+    try {
+        console.log(`Request URL: ${import.meta.env.VITE_SERVER_URL}/api/spot/recommended?region=${region}&gender=${gender}&age=${age}&relationship=${relationship}`);
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/api/spot/recommended?region=${region}&gender=${gender}&age=${age}&relationship=${relationship}`);
+        if (!response.ok) {
+            throw new Error('Failed to fetch recommended spots');
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching recommended spots:', error);
+        throw error;
     }
 };
 

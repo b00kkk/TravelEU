@@ -1,5 +1,6 @@
 <script>
     import { push } from 'svelte-spa-router';
+    import { surveyData } from '../lib/store';
 
     let travelFor = "";
     let age = "";
@@ -35,7 +36,11 @@
         console.log("여행 대상을 숫자로 저장:", travelForValue);
         console.log("나이:", age);
         console.log("성별을 숫자로 저장:", genderValue);
-        
+        surveyData.set({
+          travelFor:travelForValue,
+          age: age,
+          gender: genderValue
+        });
         // 다음 페이지로 이동
         push("/spot-select"); 
       } else {
