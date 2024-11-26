@@ -1,23 +1,18 @@
 <script>
     import { onMount } from 'svelte';
-    import { tripDuration } from '../lib/store'; 
-    import { fetchSpots } from '../lib/api';
+    import { tripDuration, surveyData } from '../lib/store'; 
+    import { fetchSpots, fetchRecommendedSpots} from '../lib/api';
     import { push } from 'svelte-spa-router';
 
-    // 국가 및 지역 데이터 설정
     let countries = [
         "스페인", "영국", "독일", "네덜란드", "프랑스", 
         "포르투갈", "덴마크", "벨기에", "오스트리아", 
         "이탈리아", "스위스", "체코"
     ];
-    
-    let selectedCountry = ""; // 선택한 나라
-    let selectedRegion = ""; // 선택한 지역
-    let regions = []; // 지역 리스트
-    let spots = []; // 관광지 리스트
-    let selectedSpots = []; // 선택된 관광지 리스트
 
-    // 각 나라별 지역 데이터
+    let tripDays = 0;
+    let selectedCountries = [];
+
     const countryRegions = {
         "스페인": ["바르셀로나", "마드리드", "세비야", "팔마마요르카", "그라나다"],
         "영국": ["런던", "맨체스터", "버밍엄", "에든버러"],
@@ -33,49 +28,83 @@
         "체코": ["프라하"]
     };
 
-    // 여행 일수에 맞게 선택된 관광지 초기화
+    let travelFor = 0;
+    let age = 0;
+    let gender = 0;
+
+    // 여행 일수 설정
     tripDuration.subscribe(value => {
-        selectedSpots = []; 
+        tripDays = value;
+        selectedCountries = Array.from({ length: tripDays }, () => ({
+            selectedCountry: "",
+            selectedRegion: "",
+            regions: [],
+            spots: [],
+            selectedSpots: []
+        }));
     });
 
-    // 선택된 나라에 따른 지역 업데이트
-    function updateRegions(event) {
-        selectedCountry = event.target.value;
-        selectedRegion = ""; // 지역 초기화
-        regions = countryRegions[selectedCountry] || []; // 선택된 나라의 지역 리스트
-        spots = []; // 관광지 리스트 초기화
+    // 설문 데이터 구독
+    surveyData.subscribe(value => {
+        travelFor = value.travelFor;
+        age = value.age;
+        gender = value.gender;
+    });
+
+    // 나라 선택 시 지역 데이터 업데이트
+    function updateRegions(index, event) {
+        selectedCountries[index].selectedCountry = event.target.value;
+        selectedCountries[index].selectedRegion = "";
+        selectedCountries[index].regions = countryRegions[selectedCountries[index].selectedCountry] || [];
+        selectedCountries[index].spots = []; // 관광지 초기화
+        selectedCountries[index].recommendedSpots=[];
     }
 
-    // 선택된 지역에 따른 관광지 데이터 가져오기
-    async function fetchSpotsData() {
-        if (selectedRegion) {
+
+    // 모든 관광지 데이터 가져오기
+    async function fetchSpotsData(index) {
+        if (selectedCountries[index].selectedRegion) {
             try {
-                const data = await fetchSpots(selectedRegion); // 비동기 호출
-                console.log('Data fetched:', data); // 데이터 확인
-                spots = data; // 관광지 데이터 저장
+                const data = await fetchSpots(selectedCountries[index].selectedRegion);
+                const recommendedData = await fetchRecommendedSpots(
+                    selectedCountries[index].selectedRegion,
+                    gender,
+                    age,
+                    travelFor
+                );
+                console.log(`Data fetched for day ${index + 1}:`, data);
+                selectedCountries[index].spots = data;
+                selectedCountries[index].recommendedSpots = recommendedData;
             } catch (error) {
                 console.error("Error fetching spots:", error);
-                spots = []; // 오류 발생 시 관광지 리스트 초기화
+                selectedCountries[index].spots = [];
                 alert("관광지 데이터를 가져오는 데 오류가 발생했습니다.");
             }
         } else {
-            spots = []; // 지역이 선택되지 않은 경우 초기화
+            selectedCountries[index].spots = [];
         }
     }
 
-    // 선택된 관광지 처리 및 다음 페이지로 이동
+    // 관광지 선택 토글 처리
+    function toggleSpot(index, spot) {
+        selectedCountries = selectedCountries.map((day, i) => {
+            if (i === index) {
+                const isSelected = day.selectedSpots.includes(spot);
+                return {
+                    ...day,
+                    selectedSpots: isSelected
+                        ? day.selectedSpots.filter(s => s !== spot)
+                        : [...day.selectedSpots, spot],
+                };
+            }
+            return day;
+        });
+    }
+
+    // 선택된 관광지 및 제출 처리
     function handleSubmit() {
-        console.log("선택된 관광지:", selectedSpots);
-        push("/next-page"); // 다음 페이지로 이동
-    }
-
-    // 체크박스 상태 변경 처리
-    function toggleSpot(spot) {
-        if (selectedSpots.includes(spot)) {
-            selectedSpots = selectedSpots.filter(s => s !== spot); // 이미 선택된 경우 제거
-        } else {
-            selectedSpots.push(spot); // 선택되지 않은 경우 추가
-        }
+        console.log("선택된 관광지 정보:", selectedCountries);
+        push("/next-page");
     }
 </script>
 
@@ -99,7 +128,7 @@
         font-weight: bold;
     }
 
-    .spot-selection {
+    .recommended-spot-selection, .spot-selection {
         max-height: 200px; /* 높이 제한 */
         overflow-y: auto; /* 세로 스크롤 가능 */
         border: 1px solid #ccc; /* 테두리 */
@@ -132,57 +161,82 @@
 </style>
 
 <div class="container">
-    <h3>관광지 선택</h3>
-
-    <div class="country-selection">
-        <label for="country" class="label">방문할 나라 선택</label>
-        <select id="country" on:change={updateRegions}>
-            <option value="" disabled selected>나라 선택</option>
-            {#each countries as country}
-                <option value={country}>{country}</option>
-            {/each}
-        </select>
-    </div>
-
-    {#if selectedCountry}
-    <div class="region-selection">
-        <label for="region" class="label">지역 선택</label>
-        <select id="region" on:change={(e) => { selectedRegion = e.target.value; fetchSpotsData(); }}>
-            <option value="" disabled selected>지역 선택</option>
-            {#each regions as region}
-                <option value={region}>{region}</option>
-            {/each}
-        </select>
-    </div>
-    {/if}
-
-    {#if selectedRegion}
-    <div class="spot-selection">
-        <label for="spot" class="label">관광지 선택</label>
-        {#each spots as spot}
-            <div>
-                <input 
-                    type="checkbox" 
-                    id={spot.attraction_name} 
-                    value={spot.attraction_name} 
-                    on:change={() => toggleSpot(spot.attraction_name)} 
-                />
-                <label for={spot.attraction_name}>{spot.attraction_name}</label>
-            </div>
-        {/each}
-    </div>
-    {/if}
-
-    {#if selectedSpots.length > 0}
-        <div class="selected-spots">
-            <h4>선택된 관광지:</h4>
-            <ul>
-                {#each selectedSpots as spot}
-                    <li>{spot}</li>
+    <h3>여행 계획을 세워보세요</h3>
+    {#each selectedCountries as day, index}
+        <div class="country-selection">
+            <label for="country-{index}" class="label">Day {index + 1}: 방문할 나라 선택</label>
+            <select id="country-{index}" on:change={(e) => updateRegions(index, e)}>
+                <option value="" disabled selected>나라 선택</option>
+                {#each countries as country}
+                    <option value={country}>{country}</option>
                 {/each}
-            </ul>
+            </select>
         </div>
-    {/if}
+
+        {#if day.selectedCountry}
+        <div class="region-selection">
+            <label for="region-{index}" class="label">지역 선택</label>
+            <select id="region-{index}" on:change={(e) => { day.selectedRegion = e.target.value; fetchSpotsData(index); }}>
+                <option value="" disabled selected>지역 선택</option>
+                {#each day.regions as region}
+                    <option value={region}>{region}</option>
+                {/each}
+            </select>
+        </div>
+        {/if}
+
+        {#if day.selectedRegion}
+            <!-- 추천 관광지 -->
+            <div class="recommended-spot-selection">
+                <label for="recommend-{index}" class="label">추천 관광지</label>
+                {#if day.recommendedSpots.length > 0}
+                    {#each day.recommendedSpots as spot}
+                        <div>
+                            <input 
+                                type="checkbox" 
+                                id="recommended-{spot.attraction_name}-{index}" 
+                                value={spot.attraction_name} 
+                                on:change={() => toggleSpot(index, spot.attraction_name)} 
+                            />
+                            <label for="recommended-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
+                        </div>
+                    {/each}
+                {:else}
+                    <p>추천 관광지가 없습니다.</p>
+                {/if}
+            </div>
+
+            <!-- 일반 관광지 -->
+            <div class="spot-selection">
+                <label for="spot-{index}" class="label">일반 관광지</label>
+                {#each day.spots.filter(spot => 
+                    !day.recommendedSpots.some(recommended => recommended.attraction_name === spot.attraction_name)
+                ) as spot}
+                    <div>
+                        <input 
+                            type="checkbox" 
+                            id="spot-{spot.attraction_name}-{index}" 
+                            value={spot.attraction_name} 
+                            on:change={() => toggleSpot(index, spot.attraction_name)} 
+                        />
+                        <label for="spot-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
+                    </div>
+                {/each}
+            </div>
+        {/if}   
+
+
+        {#if day.selectedSpots.length > 0}
+            <div class="selected-spots">
+                <h4>선택된 관광지 (Day {index + 1}):</h4>
+                <ul>
+                    {#each day.selectedSpots as spot}
+                        <li>{spot}</li>
+                    {/each}
+                </ul>
+            </div>
+        {/if}
+    {/each}
 
     <button on:click={handleSubmit}>제출</button>
 </div>

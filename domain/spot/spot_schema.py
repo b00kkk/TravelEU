@@ -7,3 +7,4 @@ class SpotBase(BaseModel):
 class Spot(SpotBase):
     class Config:
         orm_mode = True
+
