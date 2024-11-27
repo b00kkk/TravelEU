@@ -14,3 +14,9 @@ export const access_token = persist_storage("access_token", "")
 export const id = persist_storage("id", "")
 export const is_login = persist_storage("is_login", false)
 export const tripDuration = writable(0);
+
+export const surveyData = writable({
+    travelFor: 0,
+    age: 0,
+    gender: 0
+});
