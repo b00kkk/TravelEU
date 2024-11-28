@@ -16,4 +16,4 @@ def read_spots(location_id: str, db: Session = Depends(get_db)):
 @router.get("/recommended")
 def read_recommended_spots(region: str, gender: int, age: int, relationship: int, db: Session = Depends(get_db)):
     attraction_names=spot_crud.get_recommended_spots(db,region,gender, age, relationship)
-    return [{"attraction_name": i.attraction_name} for i in attraction_names]
+    return [{"attraction_name": i['attraction_name']} for i in attraction_names]
