@@ -106,6 +106,17 @@
         console.log("선택된 관광지 정보:", selectedCountries);
         push("/next-page");
     }
+
+    function getGoogleMapsUrl(region, attractionName) {
+        const baseUrl = "https://www.google.com/maps/search/?api=1";
+        const query = encodeURIComponent(`${region} ${attractionName}`);
+        return `${baseUrl}&query=${query}`;
+    }
+
+    function openInGoogleMaps(region, attractionName) {
+        const url = getGoogleMapsUrl(region, attractionName);
+        window.open(url, '_blank'); // 새 탭에서 URL 열기
+    }
 </script>
 
 <style>
@@ -138,17 +149,21 @@
     }
 
     button {
-        margin-top: 20px;
-        padding: 10px 15px;
-        background-color: #007bff;
-        color: white;
+        margin-left: 10px;
+        background-color: #4CAF50; /* Green */
         border: none;
-        border-radius: 4px;
+        color: white;
+        padding: 5px 10px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        border-radius: 5px;
         cursor: pointer;
     }
 
     button:hover {
-        background-color: #0056b3;
+        background-color: #45a049;
     }
 
     .selected-spots {
@@ -199,6 +214,7 @@
                                 on:change={() => toggleSpot(index, spot.attraction_name)} 
                             />
                             <label for="recommended-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
+                            <button on:click={() => openInGoogleMaps(day.selectedRegion, spot.attraction_name)}>더보기</button>
                         </div>
                     {/each}
                 {:else}
@@ -220,6 +236,7 @@
                             on:change={() => toggleSpot(index, spot.attraction_name)} 
                         />
                         <label for="spot-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
+                        <button on:click={() => openInGoogleMaps(day.selectedRegion, spot.attraction_name)}>더보기</button>
                     </div>
                 {/each}
             </div>
