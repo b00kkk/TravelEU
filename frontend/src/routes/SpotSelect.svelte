@@ -115,7 +115,7 @@
 
     function openInGoogleMaps(region, attractionName) {
         const url = getGoogleMapsUrl(region, attractionName);
-        window.open(url, '_blank');
+        window.open(url, '_blank'); // 새 탭에서 URL 열기
     }
 </script>
 
