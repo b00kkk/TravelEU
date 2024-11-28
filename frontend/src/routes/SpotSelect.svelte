@@ -1,7 +1,8 @@
 <script>
     import { onMount } from 'svelte';
-    import { tripDuration, surveyData } from '../lib/store'; 
-    import { fetchSpots, fetchRecommendedSpots} from '../lib/api';
+    import { writable } from 'svelte/store';
+    import { tripDuration, surveyData, selectedPlan } from '../lib/store';
+    import { fetchSpots, fetchRecommendedSpots } from '../lib/api';
     import { push } from 'svelte-spa-router';
 
     let countries = [
@@ -32,7 +33,6 @@
     let age = 0;
     let gender = 0;
 
-    // 여행 일수 설정
     tripDuration.subscribe(value => {
         tripDays = value;
         selectedCountries = Array.from({ length: tripDays }, () => ({
@@ -44,24 +44,20 @@
         }));
     });
 
-    // 설문 데이터 구독
     surveyData.subscribe(value => {
         travelFor = value.travelFor;
         age = value.age;
         gender = value.gender;
     });
 
-    // 나라 선택 시 지역 데이터 업데이트
     function updateRegions(index, event) {
         selectedCountries[index].selectedCountry = event.target.value;
         selectedCountries[index].selectedRegion = "";
         selectedCountries[index].regions = countryRegions[selectedCountries[index].selectedCountry] || [];
-        selectedCountries[index].spots = []; // 관광지 초기화
-        selectedCountries[index].recommendedSpots=[];
+        selectedCountries[index].spots = [];
+        selectedCountries[index].recommendedSpots = [];
     }
 
-
-    // 모든 관광지 데이터 가져오기
     async function fetchSpotsData(index) {
         if (selectedCountries[index].selectedRegion) {
             try {
@@ -72,7 +68,6 @@
                     age,
                     travelFor
                 );
-                console.log(`Data fetched for day ${index + 1}:`, data);
                 selectedCountries[index].spots = data;
                 selectedCountries[index].recommendedSpots = recommendedData;
             } catch (error) {
@@ -85,7 +80,6 @@
         }
     }
 
-    // 관광지 선택 토글 처리
     function toggleSpot(index, spot) {
         selectedCountries = selectedCountries.map((day, i) => {
             if (i === index) {
@@ -101,10 +95,17 @@
         });
     }
 
-    // 선택된 관광지 및 제출 처리
     function handleSubmit() {
-        console.log("선택된 관광지 정보:", selectedCountries);
-        push("/next-page");
+        // 모든 일자에 대해 최소 하나의 관광지가 선택되었는지 확인
+        const allDaysValid = selectedCountries.every(day => day.selectedSpots.length > 0);
+
+        if (allDaysValid) {
+            console.log("선택된 관광지 정보:", selectedCountries);
+            selectedPlan.set(selectedCountries);
+            push("/lodging");  // 모든 조건이 충족되면 다음 페이지로 이동
+        } else {
+            alert("모든 일자에 적어도 하나의 관광지를 선택해야 합니다.");
+        }
     }
 
     function getGoogleMapsUrl(region, attractionName) {
@@ -115,7 +116,7 @@
 
     function openInGoogleMaps(region, attractionName) {
         const url = getGoogleMapsUrl(region, attractionName);
-        window.open(url, '_blank'); // 새 탭에서 URL 열기
+        window.open(url, '_blank');
     }
 </script>
 
