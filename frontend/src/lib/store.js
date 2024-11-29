@@ -20,3 +20,5 @@ export const surveyData = writable({
     age: 0,
     gender: 0
 });
+
+export const selectedPlan=writable(0);
