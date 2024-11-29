@@ -1,10 +1,21 @@
 <script>
     import { onMount } from 'svelte';
-    import { tripDuration } from '../lib/store';
+    import { tripDuration, selectedPlan } from '../lib/store';
+    import { push } from 'svelte-spa-router';
 
     let lodgingAddresses = [];
 
+    // 여행 기간에 따라 숙소 주소 필드 초기화
     $: $tripDuration, setupLodgingAddresses($tripDuration);
+
+    // selectedPlan 스토어에서 현재 여행 계획을 가져와서 숙소 주소 배열 초기화
+    selectedPlan.subscribe(value => {
+        if (value && value.lodgingAddresses && value.lodgingAddresses.length > 0) {
+            lodgingAddresses = value.lodgingAddresses;
+        } else {
+            setupLodgingAddresses($tripDuration);
+        }
+    });
 
     function setupLodgingAddresses(duration) {
         lodgingAddresses = Array.from({ length: duration }, () => ({ address: '' }));
@@ -12,7 +23,10 @@
 
     function handleSubmit() {
         console.log("숙소 주소 정보:", lodgingAddresses);
-        // 이 정보를 저장하거나 다음 처리 단계로 넘길 수 있습니다.
+        selectedPlan.update(currentPlan => {
+            return { ...currentPlan, lodgingAddresses };
+        });
+        push("/next-page")
     }
 </script>
 

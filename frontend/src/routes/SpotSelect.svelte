@@ -102,6 +102,7 @@
         if (allDaysValid) {
             console.log("선택된 관광지 정보:", selectedCountries);
             selectedPlan.set(selectedCountries);
+            console.log(selectedPlan)
             push("/lodging");  // 모든 조건이 충족되면 다음 페이지로 이동
         } else {
             alert("모든 일자에 적어도 하나의 관광지를 선택해야 합니다.");
