@@ -8,6 +8,7 @@
   import Survey from './routes/Survey.svelte'
   import SpotSelect from './routes/SpotSelect.svelte'
   import Lodging from './routes/Lodging.svelte'
+  import Route from './routes/Route.svelte'
 
   const routes = {
     '/': Home,
@@ -17,6 +18,7 @@
     '/survey':Survey,
     '/spot-select':SpotSelect,
     '/lodging':Lodging,
+    '/route':Route,
   }
 </script>
 

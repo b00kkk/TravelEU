@@ -77,4 +77,21 @@ export const fetchRecommendedSpots = async (region, gender, age, relationship) =
     }
 };
 
+export async function fetchSpotsCoordinates(spots) {
+    console.log("API 호출 URL:", 'http://localhost:8000/api/spot/coordinates'); // URL 확인
+
+    const response = await fetch('http://localhost:8000/api/spot/coordinates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(spots),
+    });
+
+    if (!response.ok) {
+        console.error(`Error fetching coordinates: ${response.status} - ${response.statusText}`);
+        throw new Error('Failed to fetch spot coordinates');
+    }
+
+    return await response.json();
+}
+
 export default fastapi;

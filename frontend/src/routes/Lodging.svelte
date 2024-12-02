@@ -26,7 +26,7 @@
         selectedPlan.update(currentPlan => {
             return { ...currentPlan, lodgingAddresses };
         });
-        push("/next-page")
+        push("/route")
     }
 </script>
 

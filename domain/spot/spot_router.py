@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
 from . import spot_crud
+from typing import List
 
 router = APIRouter(
     prefix="/api/spot",
@@ -17,3 +18,10 @@ def read_spots(location_id: str, db: Session = Depends(get_db)):
 def read_recommended_spots(region: str, gender: int, age: int, relationship: int, db: Session = Depends(get_db)):
     attraction_names=spot_crud.get_recommended_spots(db,region,gender, age, relationship)
     return [{"attraction_name": i['attraction_name']} for i in attraction_names]
+
+@router.post("/coordinates")
+def get_coordinates(spots: List[str], db: Session = Depends(get_db)):
+    print(f"Received spots: {spots}")
+    coordinates = spot_crud.get_spots_coordinates(spots, db)
+    print(f"Returned coordinates: {coordinates}")
+    return coordinates
