@@ -4,11 +4,14 @@
     import { fetchSpotsCoordinates } from '../lib/api'; // 좌표를 가져오는 API 함수
 
     let days = [];
+    let lodgingAddresses = []; // 숙소 정보를 저장할 배열
 
     // selectedPlan 구독
     selectedPlan.subscribe(plan => {
         console.log("selectedPlan 데이터:", plan);
         days = [];
+        lodgingAddresses = plan.lodgingAddresses || []; // 숙소 정보를 가져옴
+
         for (let key in plan) {
             if (plan.hasOwnProperty(key) && key !== 'lodgingAddresses' && typeof plan[key] === 'object') {
                 days.push({
@@ -17,7 +20,9 @@
                 });
             }
         }
+
         console.log("가공된 days 데이터:", days);
+        console.log("숙소 정보:", lodgingAddresses);
     });
 
     // Haversine 공식을 사용한 거리 계산
@@ -76,7 +81,6 @@
         }
     }
 
-    // 모든 일자의 최적 경로 계산
     async function optimizeAllRoutes() {
         for (let day of days) {
             if (day.selectedSpots && day.selectedSpots.length > 1) {
@@ -113,10 +117,16 @@
     li {
         margin-bottom: 5px;
     }
+    .lodging {
+        margin-top: 15px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        background-color: #f9f9f9;
+    }
 </style>
 
 <div class="container">
-    <h1>여행 일정별 최적 경로</h1>
+    <h1>여행 일정별 최적 경로 및 숙소 정보</h1>
     {#each days as day, index}
         <div class="day-container">
             <h2>Day {parseInt(day.dayIndex) + 1}</h2>
@@ -128,6 +138,16 @@
                 </ul>
             {:else}
                 <p>선택된 관광지가 없습니다.</p>
+            {/if}
+
+            <!-- 숙소 정보 표시 -->
+            {#if lodgingAddresses[index]}
+                <div class="lodging">
+                    <h3>숙소:</h3>
+                    <p>{lodgingAddresses[index].address}</p>
+                </div>
+            {:else}
+                <p>숙소 정보가 없습니다.</p>
             {/if}
         </div>
     {/each}
