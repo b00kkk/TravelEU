@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Float
 from database import Base
 
 class User(Base):
@@ -13,7 +13,9 @@ class Spot(Base):
     __tablename__ = "SPOT"
 
     location_id = Column(String)  # 지역명
-    attraction_name = Column(String,primary_key=True)  # 관광지명
+    attraction_name = Column(String, primary_key=True)  # 관광지명
+    latitude = Column(Float)  # 위도
+    longitude = Column(Float)  # 경도
 
 class Grade(Base):
     __tablename__ = "GRADE"

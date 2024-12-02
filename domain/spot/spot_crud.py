@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from models import Grade, Spot
-from surprise import Dataset, Reader, SVD, accuracy
+from surprise import Dataset, Reader, SVD
 import pandas as pd
+from typing import List
 
 def get_spots(db: Session, location_id: str):
     return db.query(Spot).filter(Spot.location_id == location_id).all()
@@ -38,3 +39,17 @@ def get_recommended_spots(db: Session, region: str, gender: int, age: int, relat
     recommendations = sorted(recommendations, key=lambda x: x['estimated_rating'], reverse=True)[:5]
     print(recommendations)
     return recommendations
+
+def get_spots_coordinates(spots: List[str], db: Session):
+    print(f"Querying for spots: {spots}")  # 쿼리할 데이터 출력
+    results = db.query(Spot).filter(Spot.attraction_name.in_(spots)).all()
+    print(f"Query results: {results}")  # 데이터베이스 쿼리 결과 출력
+
+    if not results:
+        print("No results found for the given spots.")
+        return []
+
+    return [
+        {"latitude": spot.latitude, "longitude": spot.longitude}
+        for spot in results
+    ]

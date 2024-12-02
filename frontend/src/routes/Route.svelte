@@ -1,19 +1,93 @@
 <script>
+    import { onMount } from 'svelte';
     import { selectedPlan } from '../lib/store';
+    import { fetchSpotsCoordinates } from '../lib/api'; // 좌표를 가져오는 API 함수
 
     let days = [];
 
+    // selectedPlan 구독
     selectedPlan.subscribe(plan => {
+        console.log("selectedPlan 데이터:", plan);
         days = [];
-        // 모든 키를 순회하면서 각 일자의 데이터 추출
         for (let key in plan) {
             if (plan.hasOwnProperty(key) && key !== 'lodgingAddresses' && typeof plan[key] === 'object') {
                 days.push({
                     ...plan[key],
-                    dayIndex: key  // 일자 인덱스 추가
+                    dayIndex: key // 일자 인덱스 추가
                 });
             }
         }
+        console.log("가공된 days 데이터:", days);
+    });
+
+    // Haversine 공식을 사용한 거리 계산
+    function haversine_distance(coord1, coord2) {
+        const R = 6371; // 지구 반지름 (km)
+        const toRad = (degrees) => degrees * Math.PI / 180;
+        const lat1 = toRad(coord1[0]), lon1 = toRad(coord1[1]);
+        const lat2 = toRad(coord2[0]), lon2 = toRad(coord2[1]);
+
+        const dlat = lat2 - lat1;
+        const dlon = lon2 - lon1;
+
+        const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) ** 2;
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return R * c;
+    }
+
+    // 최적 경로 계산 (Nearest Neighbor 알고리즘)
+    function nearest_neighbor_tsp(coords) {
+        const num_coords = coords.length;
+        const unvisited = new Set([...Array(num_coords).keys()]);
+        let current_city = 0;
+        const tour = [current_city];
+        unvisited.delete(current_city);
+
+        while (unvisited.size) {
+            const nearest_city = Array.from(unvisited).reduce((nearest, city) => 
+                haversine_distance(coords[current_city], coords[city]) <
+                haversine_distance(coords[current_city], coords[nearest]) ? city : nearest
+            );
+            tour.push(nearest_city);
+            unvisited.delete(nearest_city);
+            current_city = nearest_city;
+        }
+        return tour;
+    }
+
+    async function calculateOptimalRoute(day) {
+        const spots = day.selectedSpots;
+        console.log(`Day ${day.dayIndex} - 선택된 관광지:`, spots); // 선택된 관광지 출력
+
+        try {
+            const coords = await fetchSpotsCoordinates(spots); // API를 통해 좌표 가져오기
+            console.log(`Day ${day.dayIndex} - 좌표 데이터:`, coords); // 좌표 데이터 출력
+
+            const optimalTour = nearest_neighbor_tsp(coords.map(coord => [coord.latitude, coord.longitude]));
+            console.log(`Day ${day.dayIndex} - 최적 경로 인덱스:`, optimalTour); // 최적 경로 인덱스 출력
+
+            // 최적 경로에 따라 관광지 정렬
+            day.selectedSpots = optimalTour.map(index => spots[index]);
+            console.log(`Day ${day.dayIndex} - 최적 경로 정렬 결과:`, day.selectedSpots); // 정렬된 결과 출력
+        } catch (error) {
+            console.error(`Day ${day.dayIndex} - 오류 발생:`, error);
+            alert("최적 경로를 계산하는 중 오류가 발생했습니다.");
+        }
+    }
+
+    // 모든 일자의 최적 경로 계산
+    async function optimizeAllRoutes() {
+        for (let day of days) {
+            if (day.selectedSpots && day.selectedSpots.length > 1) {
+                await calculateOptimalRoute(day);
+            }
+        }
+    }
+
+    // 컴포넌트 마운트 시 최적 경로 계산
+    onMount(() => {
+        optimizeAllRoutes();
     });
 </script>
 
@@ -42,7 +116,7 @@
 </style>
 
 <div class="container">
-    <h1>여행 일정별 관광지 목록</h1>
+    <h1>여행 일정별 최적 경로</h1>
     {#each days as day, index}
         <div class="day-container">
             <h2>Day {parseInt(day.dayIndex) + 1}</h2>
