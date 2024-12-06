@@ -5,12 +5,16 @@
 
     let days = [];
     let lodgingAddresses = []; // 숙소 정보를 저장할 배열
+    let map; // Google Map 인스턴스
+    let directionsService; // Directions Service 인스턴스
+    let directionsRenderer; // Directions Renderer 인스턴스
+    let dayRoutes = []; // 일별 경로 데이터 저장
 
     // selectedPlan 구독
     selectedPlan.subscribe(plan => {
-        console.log("selectedPlan 데이터:", plan);
         days = [];
         lodgingAddresses = plan.lodgingAddresses || []; // 숙소 정보를 가져옴
+        dayRoutes = []; // 경로 초기화
 
         for (let key in plan) {
             if (plan.hasOwnProperty(key) && key !== 'lodgingAddresses' && typeof plan[key] === 'object') {
@@ -18,80 +22,67 @@
                     ...plan[key],
                     dayIndex: key // 일자 인덱스 추가
                 });
+                dayRoutes.push([]); // 일별 경로 초기화
             }
         }
-
-        console.log("가공된 days 데이터:", days);
-        console.log("숙소 정보:", lodgingAddresses);
     });
 
-    // Haversine 공식을 사용한 거리 계산
-    function haversine_distance(coord1, coord2) {
-        const R = 6371; // 지구 반지름 (km)
-        const toRad = (degrees) => degrees * Math.PI / 180;
-        const lat1 = toRad(coord1[0]), lon1 = toRad(coord1[1]);
-        const lat2 = toRad(coord2[0]), lon2 = toRad(coord2[1]);
-
-        const dlat = lat2 - lat1;
-        const dlon = lon2 - lon1;
-
-        const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) ** 2;
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-        return R * c;
+    // Google Maps 초기화
+    function initMap() {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: { lat: 48.8566, lng: 2.3522 }, // 초기 지도 중심 (파리 좌표 예시)
+            zoom: 6,
+        });
+        directionsService = new google.maps.DirectionsService();
+        directionsRenderer = new google.maps.DirectionsRenderer({
+            map,
+            suppressMarkers: false, // 기본 마커 표시
+        });
     }
 
-    // 최적 경로 계산 (Nearest Neighbor 알고리즘)
-    function nearest_neighbor_tsp(coords) {
-        const num_coords = coords.length;
-        const unvisited = new Set([...Array(num_coords).keys()]);
-        let current_city = 0;
-        const tour = [current_city];
-        unvisited.delete(current_city);
-
-        while (unvisited.size) {
-            const nearest_city = Array.from(unvisited).reduce((nearest, city) => 
-                haversine_distance(coords[current_city], coords[city]) <
-                haversine_distance(coords[current_city], coords[nearest]) ? city : nearest
-            );
-            tour.push(nearest_city);
-            unvisited.delete(nearest_city);
-            current_city = nearest_city;
+    // 각 경로 데이터를 미리 계산하여 저장
+    async function calculateRoutes(dayIndex) {
+        const day = days[dayIndex];
+        if (!day.selectedSpots || day.selectedSpots.length < 2) {
+            alert('최소 2개의 관광지가 필요합니다.');
+            return;
         }
-        return tour;
-    }
 
-    async function calculateOptimalRoute(day) {
-        const spots = day.selectedSpots;
-        console.log(`Day ${day.dayIndex} - 선택된 관광지:`, spots); // 선택된 관광지 출력
+        const coords = await fetchSpotsCoordinates(day.selectedSpots);
+        const points = coords.map(coord => ({ lat: coord.latitude, lng: coord.longitude }));
+        dayRoutes[dayIndex] = []; // 초기화
 
-        try {
-            const coords = await fetchSpotsCoordinates(spots); // API를 통해 좌표 가져오기
-            console.log(`Day ${day.dayIndex} - 좌표 데이터:`, coords); // 좌표 데이터 출력
-
-            const optimalTour = nearest_neighbor_tsp(coords.map(coord => [coord.latitude, coord.longitude]));
-            console.log(`Day ${day.dayIndex} - 최적 경로 인덱스:`, optimalTour); // 최적 경로 인덱스 출력
-
-            // 최적 경로에 따라 관광지 정렬
-            day.selectedSpots = optimalTour.map(index => spots[index]);
-            console.log(`Day ${day.dayIndex} - 최적 경로 정렬 결과:`, day.selectedSpots); // 정렬된 결과 출력
-        } catch (error) {
-            console.error(`Day ${day.dayIndex} - 오류 발생:`, error);
-            alert("최적 경로를 계산하는 중 오류가 발생했습니다.");
+        for (let i = 0; i < points.length - 1; i++) {
+            dayRoutes[dayIndex].push({
+                origin: points[i],
+                destination: points[i + 1],
+            });
         }
     }
 
-    async function optimizeAllRoutes() {
-        for (let day of days) {
-            if (day.selectedSpots && day.selectedSpots.length > 1) {
-                await calculateOptimalRoute(day);
+    // 경로 표시
+    function displayRoute(route) {
+        directionsService.route(
+            {
+                origin: route.origin,
+                destination: route.destination,
+                travelMode: google.maps.TravelMode.DRIVING,
+            },
+            (result, status) => {
+                if (status === google.maps.DirectionsStatus.OK) {
+                    directionsRenderer.setDirections(result); // 지도에 경로 그리기
+                } else {
+                    console.error('Directions request failed due to ' + status);
+                    alert('경로를 표시할 수 없습니다.');
+                }
             }
-        }
+        );
     }
 
-    // 컴포넌트 마운트 시 최적 경로 계산
+    // onMount 시 초기화 및 경로 계산
     onMount(() => {
-        optimizeAllRoutes();
+        initMap(); // Google Maps 초기화
+        days.forEach((_, index) => calculateRoutes(index)); // 모든 Day의 경로 계산
     });
 </script>
 
@@ -123,11 +114,23 @@
         border: 1px solid #ddd;
         background-color: #f9f9f9;
     }
+    .route-buttons {
+        margin-top: 10px;
+    }
+    button {
+        margin-right: 5px;
+        margin-bottom: 5px;
+    }
+    #map {
+        width: 100%;
+        height: 400px;
+        margin-top: 20px;
+    }
 </style>
 
 <div class="container">
     <h1>여행 일정별 최적 경로 및 숙소 정보</h1>
-    {#each days as day, index}
+    {#each days as day, dayIndex}
         <div class="day-container">
             <h2>Day {parseInt(day.dayIndex) + 1}</h2>
             {#if day.selectedSpots}
@@ -136,19 +139,28 @@
                         <li>{spot}</li>
                     {/each}
                 </ul>
+                <div class="route-buttons">
+                    {#each dayRoutes[dayIndex] as route, routeIndex}
+                        <button on:click={() => displayRoute(route)}>
+                            {routeIndex + 1}번째 경로 보기
+                        </button>
+                    {/each}
+                </div>
             {:else}
                 <p>선택된 관광지가 없습니다.</p>
             {/if}
 
             <!-- 숙소 정보 표시 -->
-            {#if lodgingAddresses[index]}
+            {#if lodgingAddresses[dayIndex]}
                 <div class="lodging">
                     <h3>숙소:</h3>
-                    <p>{lodgingAddresses[index].address}</p>
+                    <p>{lodgingAddresses[dayIndex].address}</p>
                 </div>
             {:else}
                 <p>숙소 정보가 없습니다.</p>
             {/if}
         </div>
     {/each}
+
+    <div id="map"></div>
 </div>
