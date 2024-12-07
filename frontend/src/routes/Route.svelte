@@ -114,7 +114,7 @@
 
     // 숙소 주소로 좌표를 가져오는 함수
     async function fetchLodgingCoordinates(address) {
-        const apiKey = 'AIzaSyCCWBl67f6O1BeZ69lCnWFgOhkgbMNkS64'; // Google API 키 입력
+        const apiKey = 'API'; // Google API 키 입력
         const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
 
         try {
