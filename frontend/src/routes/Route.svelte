@@ -5,12 +5,11 @@
 
     let days = [];
     let lodgingAddresses = [];
-    let activeMapIndex = null; // 활성화된 지도 인덱스 (null이면 비활성화)
+    let activeMapIndices = [];
     let maps = []; // Google Maps 객체를 저장할 배열
 
     // selectedPlan 구독
     selectedPlan.subscribe(plan => {
-        console.log("selectedPlan 데이터:", plan);
         days = [];
         lodgingAddresses = plan.lodgingAddresses || []; // 숙소 정보를 가져옴
 
@@ -18,15 +17,13 @@
             if (plan.hasOwnProperty(key) && key !== 'lodgingAddresses' && typeof plan[key] === 'object') {
                 days.push({
                     ...plan[key],
-                    dayIndex: key // 일자 인덱스 추가
+                    dayIndex: key,  // 일자 인덱스 추가
+                    activeMapIndex: false, // 각 day에 대한 지도 상태 추가
                 });
             }
         }
-
-        console.log("가공된 days 데이터:", days);
-        console.log("숙소 정보:", lodgingAddresses);
     });
-
+    
     // Haversine 공식을 사용한 거리 계산
     function haversine_distance(coord1, coord2) {
         const R = 6371; // 지구 반지름 (km)
@@ -43,18 +40,16 @@
         return R * c;
     }
 
-    // 지도 초기화 및 경로 표시 (차량 경로로 변경)
-    function renderMap(index, coordinates) {
-        const mapContainer = document.getElementById(`map-${index}`);
+    // 지도 초기화 및 개별 경로 표시
+    function renderIndividualRoutes(mapId, coordinates) {
+        const mapContainer = document.getElementById(`map-${mapId}`);
         mapContainer.style.display = 'block'; // 지도를 표시
 
-        // Google Maps 객체 생성
         const map = new google.maps.Map(mapContainer, {
             center: coordinates[0],
             zoom: 12,
         });
 
-        // Directions Service와 Renderer 객체 생성
         const directionsService = new google.maps.DirectionsService();
         const directionsRenderer = new google.maps.DirectionsRenderer({
             map: map,
@@ -65,43 +60,102 @@
             },
         });
 
-        // 경로 요청을 위한 지점 설정
-        const waypoints = coordinates.slice(1, coordinates.length - 1).map(coord => ({
-            location: new google.maps.LatLng(coord[0], coord[1]),
-            stopover: true
-        }));
-
+        // 경로 요청 및 렌더링
         const request = {
-            origin: new google.maps.LatLng(coordinates[0][0], coordinates[0][1]),  // 숙소 또는 첫 지점
-            destination: new google.maps.LatLng(coordinates[coordinates.length - 1][0], coordinates[coordinates.length - 1][1]), // 마지막 지점
-            waypoints: waypoints, // 경유지 설정
-            travelMode: google.maps.TravelMode.DRIVING, // 차량 경로
+            origin: new google.maps.LatLng(coordinates[0][0], coordinates[0][1]),
+            destination: new google.maps.LatLng(coordinates[1][0], coordinates[1][1]),
+            travelMode: google.maps.TravelMode.DRIVING,
         };
 
-        // 경로 요청
         directionsService.route(request, (result, status) => {
             if (status === google.maps.DirectionsStatus.OK) {
-                directionsRenderer.setDirections(result); // 경로를 지도에 표시
-                console.log("경로 계산 완료:", result);
+                directionsRenderer.setDirections(result);
             } else {
                 console.error("경로 계산 오류:", status);
             }
         });
 
-        maps[index] = map; // 생성된 지도 객체를 저장
+        // 지도 객체 저장 (선택 사항)
+        maps[mapId] = map;
     }
 
 
-    // 지도 토글 함수
-    function toggleMap(index, coordinates) {
-        const mapContainer = document.getElementById(`map-${index}`);
+    function toggleMap(dayIndex, spotIndex) {
+        const day = days[dayIndex]; // 클릭된 day 객체
+        const mapContainer = document.getElementById(`map-${dayIndex}-${spotIndex}`);
 
-        if (activeMapIndex === index) {
-            activeMapIndex = null; // 지도 비활성화
-            mapContainer.style.display = 'none';
+        // `activeSpotMapIndices` 배열 초기화
+        if (!day.activeSpotMapIndices) {
+            day.activeSpotMapIndices = [];
+        }
+
+        // 특정 spot의 지도 상태 토글
+        day.activeSpotMapIndices[spotIndex] = !day.activeSpotMapIndices[spotIndex];
+
+        if (day.activeSpotMapIndices[spotIndex]) {
+            // 지도 보이기 및 경로 표시
+            mapContainer.style.display = 'block';
+
+            // 정렬된 좌표를 가져옴
+            const coordinates = day.coordinates.slice(spotIndex, spotIndex + 2);
+
+            // 경로 렌더링
+            if (coordinates.length === 2) {
+                renderIndividualRoutes(`${dayIndex}-${spotIndex}`, coordinates);
+            } else {
+                console.warn("경로를 표시할 충분한 좌표가 없습니다.");
+            }
         } else {
-            activeMapIndex = index; // 활성화된 지도 인덱스 설정
-            renderMap(index, coordinates);
+            // 지도 숨기기
+            mapContainer.style.display = 'none';
+        }
+    }
+
+
+    // 숙소 주소로 좌표를 가져오는 함수
+    async function fetchLodgingCoordinates(address) {
+        const apiKey = 'AIzaSyCCWBl67f6O1BeZ69lCnWFgOhkgbMNkS64'; // Google API 키 입력
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.status === 'OK') {
+                const location = data.results[0].geometry.location;
+                return [location.lat, location.lng]; // [위도, 경도] 반환
+            } else {
+                throw new Error('좌표를 찾을 수 없습니다.');
+            }
+        } catch (error) {
+            console.error('숙소 좌표 구하기 오류:', error);
+            throw error;
+        }
+    }
+
+    // 숙소 좌표를 구하고 lodgingAddresses 배열에 추가하는 함수
+    async function getLodgingCoordinatesForAllDays() {
+        for (let i = 0; i < lodgingAddresses.length; i++) {
+            const address = lodgingAddresses[i].address;
+            try {
+                const coords = await fetchLodgingCoordinates(address);
+                lodgingAddresses[i].coordinates = coords; // 좌표 저장
+                console.log(`숙소 ${i + 1} 좌표:`, coords);
+            } catch (error) {
+                console.error(`숙소 ${i + 1} 좌표 구하기 오류:`, error);
+            }
+        }
+    }
+
+    // 모든 일자의 경로를 최적화
+    async function optimizeAllRoutes() {
+        for (let i = 0; i < days.length; i++) {
+            const day = days[i];
+            const lodging = lodgingAddresses[i];
+            if (day.selectedSpots && day.selectedSpots.length > 1) {
+                const lodgingCoord = lodging?.coordinates;
+                await calculateOptimalRoute(day, lodgingCoord);
+            }
         }
     }
 
@@ -153,10 +207,12 @@
                 index === 0 ? lodgingAddresses[day.dayIndex].address : spots[index - 1] // 인덱스 0은 숙소로 표시
             );
             console.log(`Day ${day.dayIndex} - 최적 경로 정렬 결과 (숙소 포함):`, sortedSpots);
-
+            
+            const sortedCoords = optimalTour.reverse().map(index => coords[index]);
+            console.log(`Day ${day.dayIndex} - 최적 경로 정렬된 좌표:`, sortedCoords);
             // 새로운 배열로 업데이트
             day.selectedSpots = [...sortedSpots]; // 새 배열로 교체
-
+            day.coordinates = [...sortedCoords];
             // `selectedSpots`의 변경 사항이 반영되도록 강제로 업데이트 (반응형 시스템을 활용)
             selectedPlan.update(plan => {
                 plan[day.dayIndex] = day;  // `day` 객체를 반영하도록 업데이트
@@ -169,53 +225,7 @@
         }
     }
 
-    // 모든 일자의 경로를 최적화
-    async function optimizeAllRoutes() {
-        for (let i = 0; i < days.length; i++) {
-            const day = days[i];
-            const lodging = lodgingAddresses[i];
-            if (day.selectedSpots && day.selectedSpots.length > 1) {
-                const lodgingCoord = lodging?.coordinates;
-                await calculateOptimalRoute(day, lodgingCoord);
-            }
-        }
-    }
-
-    // 숙소 주소로 좌표를 가져오는 함수
-    async function fetchLodgingCoordinates(address) {
-        const apiKey = 'API'; // Google API 키 입력
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(address)}&key=${apiKey}`;
-
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
-
-            if (data.status === 'OK') {
-                const location = data.results[0].geometry.location;
-                return [location.lat, location.lng]; // [위도, 경도] 반환
-            } else {
-                throw new Error('좌표를 찾을 수 없습니다.');
-            }
-        } catch (error) {
-            console.error('숙소 좌표 구하기 오류:', error);
-            throw error;
-        }
-    }
-
-    // 숙소 좌표를 구하고 lodgingAddresses 배열에 추가하는 함수
-    async function getLodgingCoordinatesForAllDays() {
-        for (let i = 0; i < lodgingAddresses.length; i++) {
-            const address = lodgingAddresses[i].address;
-            try {
-                const coords = await fetchLodgingCoordinates(address);
-                lodgingAddresses[i].coordinates = coords; // 좌표 저장
-                console.log(`숙소 ${i + 1} 좌표:`, coords);
-            } catch (error) {
-                console.error(`숙소 ${i + 1} 좌표 구하기 오류:`, error);
-            }
-        }
-    }
-
+    // 지도 데이터를 준비
     async function prepareMaps() {
         for (let i = 0; i < days.length; i++) {
             const day = days[i];
@@ -224,7 +234,7 @@
             if (day.selectedSpots && day.selectedSpots.length > 1) {
                 const lodgingCoord = lodging?.coordinates;
                 const spots = day.selectedSpots;
-                
+
                 // 관광지 좌표 가져오기
                 const spotCoords = await fetchSpotsCoordinates(spots);
                 let coordinates = spotCoords.map(c => [c.latitude, c.longitude]);
@@ -234,75 +244,66 @@
                     coordinates.unshift(lodgingCoord); // 숙소를 첫 번째 좌표로 추가
                 }
 
-                // 최적 경로 계산 (Nearest Neighbor 알고리즘)
-                const optimalTour = nearest_neighbor_tsp(coordinates);
+                // 각 관광지 간의 경로 표시
+                day.coordinates = coordinates;
 
-                // 최적 경로 순서대로 좌표 정렬
-                day.coordinates = optimalTour.map(index => coordinates[index]).reverse();
-
-                console.log(`Day ${day.dayIndex} - 최적 경로로 정렬된 좌표:`, day.coordinates);
+                console.log(`Day ${day.dayIndex} - 관광지 간 개별 경로:`, day.coordinates);
             }
         }
     }
 
+    // 페이지 로드 시 경로 준비
     onMount(async () => {
-        await getLodgingCoordinatesForAllDays(); // 숙소 좌표 계산
-        await optimizeAllRoutes(); // 최적 경로 계산
-        await prepareMaps(); // 지도 데이터를 준비
+        await getLodgingCoordinatesForAllDays();
+        await optimizeAllRoutes();
+        await prepareMaps();
     });
 </script>
 
 <style>
+    .container {
+        margin: 20px;
+    }
+    .day-container {
+        margin-bottom: 20px;
+    }
     .map-container {
-        position: relative;
-        height: 0;
-        padding-bottom: 56.25%; /* 16:9 비율 */
-        display: none; /* 기본적으로 숨김 */
-        margin-top: 10px;
-    }
-    .map {
-        position: absolute;
-        top: 0;
-        left: 0;
+        height: 400px;
         width: 100%;
-        height: 100%;
-    }
-    .map-toggle {
-        cursor: pointer;
-        background-color: #f1f1f1;
-        border: 1px solid #ccc;
-        border-radius: 5px;
-        padding: 5px 10px;
-        margin-top: 10px;
-        display: inline-block;
-        z-index: 10; /* 버튼이 맨 위로 오게 설정 */
+        margin-top: 20px;
     }
 </style>
-
 <div class="container">
     <h1>여행 일정별 최적 경로 및 숙소 정보</h1>
-    {#each days as day, index}
+        {#each days as day, dayIndex}
         <div class="day-container">
             <h2>Day {parseInt(day.dayIndex) + 1}</h2>
             {#if day.selectedSpots}
                 <ul>
-                    {#each day.selectedSpots as spot}
-                        <li>{spot}</li>
+                    {#each day.selectedSpots as spot, spotIndex (spot)}
+                        <li>
+                            <div>{spot}</div>
+                            <!-- 개별 spot 경로 표시 버튼 -->
+                            {#if spotIndex < day.selectedSpots.length - 1}
+                            <button 
+                                type="button" 
+                                class="route-button" 
+                                on:click={() => toggleMap(dayIndex, spotIndex)}
+                            > 경로
+                            </button>
+                            {/if}
+                            <div 
+                                id={`map-${dayIndex}-${spotIndex}`} 
+                                class="map-container" 
+                                style="display: none;">
+                            </div>
+                        </li>
                     {/each}
                 </ul>
             {:else}
                 <p>선택된 관광지가 없습니다.</p>
             {/if}
-
-            <!-- 지도 토글 버튼 -->
-
-                <button type="button" class="map-toggle" on:click={() => toggleMap(index, day.coordinates)}>
-                    {activeMapIndex === index ? '지도를 숨기기' : '지도를 보기'}
-                </button>
-                <div id={`map-${index}`} class="map-container">
-                    <div class="map"></div>
-                </div>
-
         </div>
     {/each}
+
 </div>
