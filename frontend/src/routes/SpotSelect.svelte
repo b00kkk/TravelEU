@@ -1,3 +1,7 @@
+<head>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+</head>
+
 <script>
     import { onMount } from 'svelte';
     import { writable } from 'svelte/store';
@@ -102,7 +106,7 @@
         if (allDaysValid) {
             console.log("선택된 관광지 정보:", selectedCountries);
             selectedPlan.set(selectedCountries);
-            console.log(selectedPlan)
+            console.log(selectedPlan);
             push("/lodging");  // 모든 조건이 충족되면 다음 페이지로 이동
         } else {
             alert("모든 일자에 적어도 하나의 관광지를 선택해야 합니다.");
@@ -122,140 +126,220 @@
 </script>
 
 <style>
+    /* 전체 컨테이너 스타일 */
     .container {
         display: flex;
         flex-direction: column;
         align-items: center;
         padding: 20px;
-        max-width: 600px;
+        max-width: 1000px;
         margin: 0 auto;
+        border-radius: 8px;
+    }
+
+    /* 제목 스타일 */
+    h3 {
+        color: #1e3a8a;
+        font-size: 24px;
+        margin-bottom: 20px;
+        font-weight: 600;
+    }
+
+    /* Day 항목을 가로로 배치 */
+    .days-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 20px;
+        justify-content: center;
+    }
+
+    /* 각 Day 항목 스타일 */
+    .day-item {
+        flex: 1 1 30%; /* 너비를 30%로 설정하고, 3개 열을 유지 */
+        min-width: 250px;
+        padding: 15px;
+        background-color: #f9f9f9;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        margin-bottom: 15px;
     }
 
     .country-selection, .region-selection {
         width: 100%;
         max-width: 400px;
         margin: 15px 0;
+        background-color: #fff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px;
     }
 
     .label {
         font-weight: bold;
+        color: #1e40af;
+        margin-bottom: 5px;
     }
 
     .recommended-spot-selection, .spot-selection {
-        max-height: 200px; /* 높이 제한 */
-        overflow-y: auto; /* 세로 스크롤 가능 */
-        border: 1px solid #ccc; /* 테두리 */
-        border-radius: 4px; /* 모서리 둥글게 */
-        padding: 10px; /* 패딩 */
-        margin-top: 10px; /* 상단 여백 */
+        max-height: 200px;
+        overflow-y: auto;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px;
+        background-color: #fff;
+        margin-top: 10px;
     }
 
     button {
         margin-left: 10px;
-        background-color: #4CAF50; /* Green */
+        background-color: #3b82f6;
         border: none;
         color: white;
-        padding: 5px 10px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
+        padding: 8px 15px;
         font-size: 16px;
-        border-radius: 5px;
+        border-radius: 8px;
         cursor: pointer;
+        transition: background-color 0.3s ease;
     }
 
     button:hover {
-        background-color: #45a049;
+        background-color: #2563eb;
     }
 
     .selected-spots {
         margin-top: 20px;
-        padding: 10px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
+        padding: 20px;
+        border: 2px solid #3b82f6;
+        border-radius: 10px;
+        background-color: #e0f7ff;
         width: 100%;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .selected-spots h4 {
+        color: #1e40af;
+        font-size: 18px;
+        margin-bottom: 10px;
+        font-weight: 600;
+    }
+
+    .selected-spots ul {
+        padding-left: 20px;
+        list-style-type: none;
+    }
+
+    .selected-spots li {
+        font-size: 16px;
+        color: #3b82f6;
+        margin-bottom: 12px;
+        position: relative;
+        padding-left: 25px;
+    }
+
+    .selected-spots li::before {
+        content: "\f005";
+        font-family: 'Font Awesome 5 Free'; 
+        font-weight: 900;
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #ff9800;
+    }
+
+    input[type="checkbox"] {
+        margin-right: 10px;
+    }
+
+    label {
+        color: #1e3a8a;
     }
 </style>
 
 <div class="container">
     <h3>여행 계획을 세워보세요</h3>
-    {#each selectedCountries as day, index}
-        <div class="country-selection">
-            <label for="country-{index}" class="label">Day {index + 1}: 방문할 나라 선택</label>
-            <select id="country-{index}" on:change={(e) => updateRegions(index, e)}>
-                <option value="" disabled selected>나라 선택</option>
-                {#each countries as country}
-                    <option value={country}>{country}</option>
-                {/each}
-            </select>
-        </div>
+    <div class="days-container">
+        {#each selectedCountries as day, index}
+            <div class="day-item">
+                <div class="country-selection">
+                    <label for="country-{index}" class="label">Day {index + 1}: 방문할 나라 선택</label>
+                    <select id="country-{index}" on:change={(e) => updateRegions(index, e)}>
+                        <option value="" disabled selected>나라 선택</option>
+                        {#each countries as country}
+                            <option value={country}>{country}</option>
+                        {/each}
+                    </select>
+                </div>
 
-        {#if day.selectedCountry}
-        <div class="region-selection">
-            <label for="region-{index}" class="label">지역 선택</label>
-            <select id="region-{index}" on:change={(e) => { day.selectedRegion = e.target.value; fetchSpotsData(index); }}>
-                <option value="" disabled selected>지역 선택</option>
-                {#each day.regions as region}
-                    <option value={region}>{region}</option>
-                {/each}
-            </select>
-        </div>
-        {/if}
+                {#if day.selectedCountry}
+                <div class="region-selection">
+                    <label for="region-{index}" class="label">지역 선택</label>
+                    <select id="region-{index}" on:change={(e) => { day.selectedRegion = e.target.value; fetchSpotsData(index); }}>
+                        <option value="" disabled selected>지역 선택</option>
+                        {#each day.regions as region}
+                            <option value={region}>{region}</option>
+                        {/each}
+                    </select>
+                </div>
+                {/if}
 
-        {#if day.selectedRegion}
-            <!-- 추천 관광지 -->
-            <div class="recommended-spot-selection">
-                <label for="recommend-{index}" class="label">추천 관광지</label>
-                {#if day.recommendedSpots.length > 0}
-                    {#each day.recommendedSpots as spot}
-                        <div>
-                            <input 
-                                type="checkbox" 
-                                id="recommended-{spot.attraction_name}-{index}" 
-                                value={spot.attraction_name} 
-                                on:change={() => toggleSpot(index, spot.attraction_name)} 
-                            />
-                            <label for="recommended-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
-                            <button on:click={() => openInGoogleMaps(day.selectedRegion, spot.attraction_name)}>더보기</button>
-                        </div>
-                    {/each}
-                {:else}
-                    <p>추천 관광지가 없습니다.</p>
+                {#if day.selectedRegion}
+                    <div class="recommended-spot-selection">
+                        <label for="recommend-{index}" class="label">추천 관광지</label>
+                        {#if day.recommendedSpots.length > 0}
+                            {#each day.recommendedSpots as spot}
+                                <div>
+                                    <input 
+                                        type="checkbox" 
+                                        id="recommended-{spot.attraction_name}-{index}" 
+                                        value={spot.attraction_name} 
+                                        on:change={() => toggleSpot(index, spot.attraction_name)} 
+                                    />
+                                    <label for="recommended-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
+                                    <button on:click={() => openInGoogleMaps(day.selectedRegion, spot.attraction_name)}>
+                                        <i class="fas fa-arrow-right"></i> <!-- 아이콘만 표시 -->
+                                    </button>
+                                </div>
+                            {/each}
+                        {:else}
+                            <p>추천 관광지가 없습니다.</p>
+                        {/if}
+                    </div>
+
+                    <div class="spot-selection">
+                        <label for="spot-{index}" class="label">일반 관광지</label>
+                        {#each day.spots.filter(spot => 
+                            !day.recommendedSpots.some(recommended => recommended.attraction_name === spot.attraction_name)
+                        ) as spot}
+                            <div>
+                                <input 
+                                    type="checkbox" 
+                                    id="spot-{spot.attraction_name}-{index}" 
+                                    value={spot.attraction_name} 
+                                    on:change={() => toggleSpot(index, spot.attraction_name)} 
+                                />
+                                <label for="spot-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
+                                <button on:click={() => openInGoogleMaps(day.selectedRegion, spot.attraction_name)}>
+                                    <i class="fas fa-arrow-right"></i> <!-- 아이콘만 표시 -->
+                                </button>
+                            </div>
+                        {/each}
+                    </div>
+                {/if}   
+
+                {#if day.selectedSpots.length > 0}
+                    <div class="selected-spots">
+                        <h4>선택된 관광지 (Day {index + 1}):</h4>
+                        <ul>
+                            {#each day.selectedSpots as spot}
+                                <li>{spot}</li>
+                            {/each}
+                        </ul>
+                    </div>
                 {/if}
             </div>
-
-            <!-- 일반 관광지 -->
-            <div class="spot-selection">
-                <label for="spot-{index}" class="label">일반 관광지</label>
-                {#each day.spots.filter(spot => 
-                    !day.recommendedSpots.some(recommended => recommended.attraction_name === spot.attraction_name)
-                ) as spot}
-                    <div>
-                        <input 
-                            type="checkbox" 
-                            id="spot-{spot.attraction_name}-{index}" 
-                            value={spot.attraction_name} 
-                            on:change={() => toggleSpot(index, spot.attraction_name)} 
-                        />
-                        <label for="spot-{spot.attraction_name}-{index}">{spot.attraction_name}</label>
-                        <button on:click={() => openInGoogleMaps(day.selectedRegion, spot.attraction_name)}>더보기</button>
-                    </div>
-                {/each}
-            </div>
-        {/if}   
-
-
-        {#if day.selectedSpots.length > 0}
-            <div class="selected-spots">
-                <h4>선택된 관광지 (Day {index + 1}):</h4>
-                <ul>
-                    {#each day.selectedSpots as spot}
-                        <li>{spot}</li>
-                    {/each}
-                </ul>
-            </div>
-        {/if}
-    {/each}
+        {/each}
+    </div>
 
     <button on:click={handleSubmit}>제출</button>
 </div>
