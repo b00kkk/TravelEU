@@ -260,22 +260,110 @@
     });
 </script>
 
+
+
 <style>
     .container {
-        margin: 20px;
+        margin: 40px auto;
+        max-width: 1100px;
+        padding: 20px;
+        background-color: #ffffff; /* 흰색 배경 */
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     }
+
+    h1 {
+        font-size: 2.5rem;
+        color: #2b6cb0; /* 깊은 블루 색상 */
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
     .day-container {
-        margin-bottom: 20px;
+        margin-bottom: 30px;
+        padding: 20px;
+        background-color: #e0f7fa; /* 연한 블루 색상 */
+        border-radius: 8px;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
     }
+
+    .day-container h2 {
+        font-size: 1.8rem;
+        color: #1e3a8a; /* 좀 더 짙은 블루 */
+        margin-bottom: 10px;
+    }
+
+    .day-container ul {
+        list-style: none;
+        padding-left: 0;
+    }
+
+    .day-container li {
+        display: flex;
+        flex-direction: column;  /* 수직으로 정렬 */
+        justify-content: center;
+        align-items: flex-start;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 6px;
+    }
+
+    .day-container li div {
+        font-size: 1.2rem;
+        color: #005f8b; /* 블루 색상 */
+        margin-bottom: 10px;  /* 관광지 이름과 버튼 사이 간격 */
+    }
+
+    .route-button {
+        background-color: #007bb5; /* 버튼 배경 블루 */
+        color: white;
+        padding: 8px 15px;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background-color 0.3s;
+        margin-top: 10px;  /* 버튼과 텍스트 간 간격 */
+    }
+
+    .route-button:hover {
+        background-color: #005f8b; /* 버튼 hover 시 어두운 블루 */
+    }
+
     .map-container {
-        height: 400px;
+        height: 300px;
         width: 100%;
         margin-top: 20px;
+        border-radius: 8px;
+        background-color: #f4f4f4;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+        display: none;
+    }
+
+    /* 반응형 스타일 */
+    @media (max-width: 768px) {
+        h1 {
+            font-size: 2rem;
+        }
+
+        .day-container {
+            padding: 15px;
+        }
+
+        .route-button {
+            font-size: 0.9rem;
+            padding: 6px 12px;
+        }
+
+        .map-container {
+            height: 250px;
+        }
     }
 </style>
+
 <div class="container">
     <h1>여행 일정별 최적 경로 및 숙소 정보</h1>
-        {#each days as day, dayIndex}
+    {#each days as day, dayIndex}
         <div class="day-container">
             <h2>Day {parseInt(day.dayIndex) + 1}</h2>
             {#if day.selectedSpots}
@@ -285,12 +373,12 @@
                             <div>{spot}</div>
                             <!-- 개별 spot 경로 표시 버튼 -->
                             {#if spotIndex < day.selectedSpots.length - 1}
-                            <button 
-                                type="button" 
-                                class="route-button" 
-                                on:click={() => toggleMap(dayIndex, spotIndex)}
-                            > 경로
-                            </button>
+                                <button 
+                                    type="button" 
+                                    class="route-button" 
+                                    on:click={() => toggleMap(dayIndex, spotIndex)}
+                                > 경로
+                                </button>
                             {/if}
                             <div 
                                 id={`map-${dayIndex}-${spotIndex}`} 
@@ -305,5 +393,4 @@
             {/if}
         </div>
     {/each}
-
 </div>
