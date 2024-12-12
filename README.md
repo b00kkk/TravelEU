@@ -67,4 +67,41 @@ TRAVELEU
 │   ├── package.json
 │   ├── package-lock.json
 │   ├── svelte.config.json
-│   ├── vite행
+│   ├── vite.config.json
+│   ├── README.md
+│   └── .gitignore
+├── domain/
+│   │   ├── user/
+│   │   │   ├── user_crud.py
+│   │   │   ├── user_schema.py
+│   │   │   └── user_router.py
+│   │   ├── spot/
+│   │   │   ├── spot_crud.py
+│   │   │   ├── spot_schema.py
+│   │   │   └── spot_router.py
+├── migrations/       
+│   ├── env.py
+│   └── README.md
+├── bigdata.db
+├── models.py
+├── database.py
+└── main.py
+```
+
+## 주요 기능
+### 회원가입/로그인
+- DB 값 확인
+- 암호화
+
+### 추천 관광지
+- 사용자가 나이, 성별, 동행인에 관한 설문폼 작성
+- 작성 데이터를 사전에 입력한 설문폼과 비교하여 추천 관광지를 보여줌
+- SVM 이용
+
+### 구글맵
+- 사용자가 관광지를 모를것이라 대비해 버튼을 누르면 팝업으로 구글맵에 관광지를 입력하여 보여줌
+- API를 이용해 교통 수단(차량, 대중교통)에 맞추어 최적 경로와 시간을 보여줌
+- Nearest Neighbor Algorithm 사용
+
+### 포트포워딩
+- 우분투에서 포트포워딩 진행
